@@ -1,4 +1,4 @@
-Developer           : ohCHA
+Developer           : ohCHA\n
 Phone Number        : 82+1059100837
 Contact e-mail      : ckekdnlt@naver.com
 LinkedIn            : www.linkedin.com/in/ohcha
