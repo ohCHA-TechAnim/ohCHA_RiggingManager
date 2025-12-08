@@ -3,196 +3,106 @@
 setlocal
 cd /d "%~dp0"
 
-:: PowerShellì„ ê´€ë¦¬ì ê¶Œí•œìœ¼ë¡œ ì‹¤í–‰
-powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((Get-Content '%~f0' -Raw) -join \"`n\")"
+:: ÄÜ¼Ö Ã¢ ¼û±â±â À§ÇØ VBScript¸¦ °ÅÄ¡´õ¶óµµ,
+:: ¹èÄ¡ ÆÄÀÏ ÀÚÃ¼¿¡¼­ ¿¡·¯ Ãâ·ÂÀ» ¸·°í PowerShell·Î ¹Ù·Î ³Ñ±é´Ï´Ù.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((Get-Content '%~f0' -Encoding Default) -join \"`n\")"
 goto :eof
 #>
 
 # ============================================================
-#  ohCHA Rig Manager Smart Installer (Auto Language Config)
+#  ohCHA Rig Manager Silent Installer
 # ============================================================
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# 1. ì–¸ì–´ ë§¤í•‘ (í‘œì‹œ ì´ë¦„ -> ë‚´ë¶€ ì½”ë“œ)
-$LangCodeMap = @{
-    "English" = "en";
-    "Korean" = "kr";
-    "Japanese" = "jp";
-    "Chinese" = "cn"
-}
-
+# 1. ¾ğ¾î ¸ÅÇÎ
+$LangCodeMap = @{ "English"="en"; "Korean"="kr"; "Japanese"="jp"; "Chinese"="cn" }
 $LangDict = @{
-    "English" = @{
-        "Title" = "ohCHA Rig Manager Installer";
-        "SelectLang" = "Select Language:";
-        "ConfirmMsg" = "Do you want to install ohCHA Rig Manager?";
-        "InstallBtn" = "Install";
-        "CancelBtn" = "Cancel";
-        "Success" = "Installation Completed!";
-        "SuccessDetail" = "Installed to {0} locations.";
-        "VerError" = "Error: 3ds Max 2025 or higher is required due to Python version.";
-        "NoMax" = "Error: No 3ds Max installation found.";
-        "NextStep" = "Please restart 3ds Max and check 'ohCHA Tools' category."
-    };
-    "Korean" = @{
-        "Title" = "ohCHA Rig Manager ì„¤ì¹˜";
-        "SelectLang" = "ì–¸ì–´ë¥¼ ì„ íƒí•˜ì„¸ìš”:";
-        "ConfirmMsg" = "ohCHA Rig Managerë¥¼ ì„¤ì¹˜í•˜ì‹œê² ìŠµë‹ˆê¹Œ?";
-        "InstallBtn" = "ì„¤ì¹˜";
-        "CancelBtn" = "ì·¨ì†Œ";
-        "Success" = "ì„¤ì¹˜ê°€ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤!";
-        "SuccessDetail" = "{0}ê°œ ê²½ë¡œì— ì„¤ì¹˜ë¨.";
-        "VerError" = "ì˜¤ë¥˜: Python ë²„ì „ í˜¸í™˜ ë¬¸ì œë¡œ 3ds Max 2025 ì´ìƒì—ì„œë§Œ ì‘ë™í•©ë‹ˆë‹¤!";
-        "NoMax" = "ì˜¤ë¥˜: 3ds Max ì„¤ì¹˜ í´ë”ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.";
-        "NextStep" = "3ds Maxë¥¼ ì¬ì‹œì‘í•˜ê³  'ohCHA Tools' ì¹´í…Œê³ ë¦¬ë¥¼ í™•ì¸í•˜ì„¸ìš”."
-    };
-    "Japanese" = @{
-        "Title" = "ohCHA Rig Manager ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ©ãƒ¼";
-        "SelectLang" = "è¨€èªã‚’é¸æŠã—ã¦ãã ã•ã„:";
-        "ConfirmMsg" = "ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã—ã¾ã™ã‹ï¼Ÿ";
-        "InstallBtn" = "ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«";
-        "CancelBtn" = "ã‚­ãƒ£ãƒ³ã‚»ãƒ«";
-        "Success" = "ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«å®Œäº†!";
-        "SuccessDetail" = "{0} ç®‡æ‰€ã«ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã•ã‚Œã¾ã—ãŸã€‚";
-        "VerError" = "ã‚¨ãƒ©ãƒ¼: Pythonãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®ãŸã‚ã€3ds Max 2025ä»¥ä¸Šã§ã®ã¿å‹•ä½œã—ã¾ã™!";
-        "NoMax" = "ã‚¨ãƒ©ãƒ¼: 3ds MaxãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚";
-        "NextStep" = "3ds Maxã‚’å†èµ·å‹•ã—ã¦ 'ohCHA Tools' ã‚«ãƒ†ã‚´ãƒªã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚"
-    };
-    "Chinese" = @{
-        "Title" = "ohCHA Rig Manager å®‰è£…ç¨‹åº";
-        "SelectLang" = "é€‰æ‹©è¯­è¨€:";
-        "ConfirmMsg" = "æ‚¨è¦å®‰è£… ohCHA Rig Manager å—ï¼Ÿ";
-        "InstallBtn" = "å®‰è£…";
-        "CancelBtn" = "å–æ¶ˆ";
-        "Success" = "å®‰è£…å®Œæˆ!";
-        "SuccessDetail" = "å·²å®‰è£…åˆ° {0} ä¸ªä½ç½®ã€‚";
-        "VerError" = "é”™è¯¯ï¼šç”±äº Python ç‰ˆæœ¬åŸå› ï¼Œä»…æ”¯æŒ 3ds Max 2025 æˆ–æ›´é«˜ç‰ˆæœ¬ï¼";
-        "NoMax" = "é”™è¯¯ï¼šæœªæ‰¾åˆ° 3ds Max å®‰è£…æ–‡ä»¶å¤¹ã€‚";
-        "NextStep" = "è¯·é‡å¯ 3ds Max å¹¶æ£€æŸ¥ 'ohCHA Tools' ç±»åˆ«ã€‚"
-    }
+    "English" = @{ "Title"="Installer"; "SelectLang"="Select Language:"; "ConfirmMsg"="Install ohCHA Rig Manager?"; "Success"="Done!"; "NextStep"="Please restart 3ds Max."; "NoMax"="Error: 3ds Max not found." };
+    "Korean" = @{ "Title"="¼³Ä¡"; "SelectLang"="¾ğ¾î ¼±ÅÃ:"; "ConfirmMsg"="ohCHA Rig Manager¸¦ ¼³Ä¡ÇÏ½Ã°Ú½À´Ï±î?"; "Success"="¼³Ä¡ ¿Ï·á!"; "NextStep"="3ds Max¸¦ Àç½ÃÀÛÇØÁÖ¼¼¿ä."; "NoMax"="¿À·ù: 3ds Max¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù." };
+    "Japanese" = @{ "Title"="«¤«ó«¹«È?«é?"; "SelectLang"="åëåŞàÔ?:"; "ConfirmMsg"="«¤«ó«¹«È?«ëª·ªŞª¹ª«£¿"; "Success"="èÇÖõ!"; "NextStep"="3ds Maxªòî¢ÑÃÔÑª·ªÆª¯ªÀªµª¤¡£"; "NoMax"="«¨«é?: 3ds Maxª¬Ì¸ªÄª«ªêªŞª»ªó¡£" };
+    "Chinese" = @{ "Title"="äÌ?ïïßí"; "SelectLang"="???åë:"; "ConfirmMsg"="äÌ? ohCHA Rig Manager£¿"; "Success"="èÇà÷!"; "NextStep"="?ñì? 3ds Max¡£"; "NoMax"="??: Ú±?Óğ 3ds Max¡£" }
 }
 
-# --- GUI ìƒì„± ---
+# 2. GUI »ı¼º (Ç×»ó ¸Ç À§¿¡ Ç¥½Ã)
 $Form = New-Object System.Windows.Forms.Form
-$Form.Text = "Select Language"
-$Form.Size = New-Object System.Drawing.Size(300, 180)
+$Form.Text = "ohCHA Setup"
+$Form.Size = New-Object System.Drawing.Size(300, 160)
 $Form.StartPosition = "CenterScreen"
 $Form.FormBorderStyle = "FixedDialog"
 $Form.MaximizeBox = $false
+$Form.TopMost = $true 
 
 $Lbl = New-Object System.Windows.Forms.Label
-$Lbl.Text = "Select Language / ì–¸ì–´ ì„ íƒ"
+$Lbl.Text = "Language / ¾ğ¾î"
 $Lbl.Location = New-Object System.Drawing.Point(20, 20)
-$Lbl.AutoSize = $true
 $Form.Controls.Add($Lbl)
 
 $Combo = New-Object System.Windows.Forms.ComboBox
-$Combo.Location = New-Object System.Drawing.Point(20, 50)
+$Combo.Location = New-Object System.Drawing.Point(20, 45)
 $Combo.Width = 240
 $Combo.DropDownStyle = "DropDownList"
-$Combo.Items.Add("English")
-$Combo.Items.Add("Korean")
-$Combo.Items.Add("Japanese")
-$Combo.Items.Add("Chinese")
+$Combo.Items.AddRange(@("English", "Korean", "Japanese", "Chinese"))
 $Combo.SelectedIndex = 0
 $Form.Controls.Add($Combo)
 
 $BtnOK = New-Object System.Windows.Forms.Button
-$BtnOK.Text = "OK"
-$BtnOK.Location = New-Object System.Drawing.Point(100, 90)
+$BtnOK.Text = "Install"
+$BtnOK.Location = New-Object System.Drawing.Point(100, 80)
 $BtnOK.DialogResult = [System.Windows.Forms.DialogResult]::OK
 $Form.Controls.Add($BtnOK)
 
-$Result = $Form.ShowDialog()
+# 3. ½ÇÇà ¹× ¼³Ä¡
+if ($Form.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    $SelectedLang = $Combo.SelectedItem.ToString()
+    $Code = $LangCodeMap[$SelectedLang]
+    $Txt = $LangDict[$SelectedLang]
 
-if ($Result -ne [System.Windows.Forms.DialogResult]::OK) {
-    exit
-}
+    # ¼³Ä¡ ·ÎÁ÷
+    $SourceDir = Get-Location
+    $AppDataMax = "$env:LOCALAPPDATA\Autodesk\3dsMax"
+    $Count = 0
+    
+    if (Test-Path $AppDataMax) {
+        $MaxFolders = Get-ChildItem -Path $AppDataMax -Directory
+        foreach ($F in $MaxFolders) {
+            if ($F.Name -match "(\d{4})") {
+                if ([int]$matches[1] -ge 2025) {
+                    $LangDirs = Get-ChildItem -Path $F.FullName -Directory
+                    foreach ($L in $LangDirs) {
+                        if ($L.Name -in @("ENU", "KOR", "JPN", "CHS")) {
+                            $Dest = Join-Path $L.FullName "scripts\ohCHA_RigManager"
+                            
+                            # º¹»ç (¿À·ù ¹«½ÃÇÏ°í µ¤¾î¾²±â)
+                            try {
+                                if (Test-Path $Dest) { Remove-Item $Dest -Recurse -Force -ErrorAction SilentlyContinue }
+                                New-Item -ItemType Directory -Force -Path $Dest | Out-Null
+                                Copy-Item -Path "$SourceDir\01.src" -Destination $Dest -Recurse -Force
+                                Copy-Item -Path "$SourceDir\03.assets" -Destination $Dest -Recurse -Force
+                                Copy-Item -Path "$SourceDir\data" -Destination $Dest -Recurse -Force
+                                
+                                # ¸ÅÅ©·Î/¾ÆÀÌÄÜ º¹»ç
+                                Copy-Item "$SourceDir\ohcha_loader.mcr" (Join-Path $L.FullName "usermacros") -Force
+                                $IconDest = Join-Path $L.FullName "usericons"
+                                Get-ChildItem "$SourceDir\03.assets\icons\ohCHALogo*.png" | Copy-Item -Destination $IconDest -Force
 
-$SelectedLangName = $Combo.SelectedItem.ToString()
-$SelectedCode = $LangCodeMap[$SelectedLangName] # ì˜ˆ: "kr"
-$Txt = $LangDict[$SelectedLangName]
-
-# --- ì„¤ì¹˜ í™•ì¸ ---
-$Confirm = [System.Windows.Forms.MessageBox]::Show($Txt["ConfirmMsg"], $Txt["Title"], [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
-
-if ($Confirm -eq [System.Windows.Forms.DialogResult]::No) {
-    exit
-}
-
-# --- ì„¤ì¹˜ ë¡œì§ ---
-$SourceDir = Get-Location
-$AppDataMax = "$env:LOCALAPPDATA\Autodesk\3dsMax"
-$InstallCount = 0
-$VersionErrorCount = 0
-
-# settings.json ë‚´ìš© ìƒì„±
-$SettingsJson = "{ `"language`": `"$SelectedCode`" }"
-
-if (-not (Test-Path $AppDataMax)) {
-    [System.Windows.Forms.MessageBox]::Show($Txt["NoMax"], $Txt["Title"], [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-    exit
-}
-
-$MaxFolders = Get-ChildItem -Path $AppDataMax -Directory
-
-foreach ($Folder in $MaxFolders) {
-    if ($Folder.Name -match "(\d{4})") {
-        $Year = [int]$matches[1]
-        if ($Year -lt 2025) {
-            $VersionErrorCount++
-            continue
-        }
-
-        $LangFolders = Get-ChildItem -Path $Folder.FullName -Directory
-
-        foreach ($LangFolder in $LangFolders) {
-            if ($LangFolder.Name -in @("ENU", "KOR", "JPN", "CHS", "CHT", "FRA", "GER", "PTB")) {
-
-                $TargetScripts = Join-Path $LangFolder.FullName "scripts\ohCHA_RigManager"
-                $TargetMacros = Join-Path $LangFolder.FullName "usermacros"
-                $TargetIcons = Join-Path $LangFolder.FullName "usericons"
-
-                # 1. Scripts ë³µì‚¬
-                if (Test-Path $TargetScripts) { Remove-Item $TargetScripts -Recurse -Force }
-                New-Item -ItemType Directory -Force -Path $TargetScripts | Out-Null
-
-                Copy-Item -Path "$SourceDir\01.src" -Destination "$TargetScripts" -Recurse -Force
-                Copy-Item -Path "$SourceDir\03.assets" -Destination "$TargetScripts" -Recurse -Force
-                Copy-Item -Path "$SourceDir\data" -Destination "$TargetScripts" -Recurse -Force
-
-                # 2. Macro ë³µì‚¬
-                Copy-Item -Path "$SourceDir\ohcha_loader.mcr" -Destination $TargetMacros -Force
-
-                # 3. Icon ë³µì‚¬
-                $IconSrc = Join-Path $SourceDir "03.assets\icons"
-                $Icons = Get-ChildItem -Path $IconSrc -Filter "ohCHALogo*.png"
-                foreach ($Icon in $Icons) {
-                    Copy-Item -Path $Icon.FullName -Destination $TargetIcons -Force
+                                # ¼³Á¤ ÆÄÀÏ »ı¼º
+                                $JsonPath = Join-Path $Dest "data\settings.json"
+                                Set-Content -Path $JsonPath -Value "{ `"language`": `"$Code`" }" -Encoding UTF8
+                                $Count++
+                            } catch {}
+                        }
+                    }
                 }
-
-                # 4. â­ï¸ ì–¸ì–´ ì„¤ì • íŒŒì¼(settings.json) ìƒì„±
-                $DataDir = Join-Path $TargetScripts "data"
-                if (-not (Test-Path $DataDir)) { New-Item -ItemType Directory -Force -Path $DataDir | Out-Null }
-                $SettingsPath = Join-Path $DataDir "settings.json"
-                Set-Content -Path $SettingsPath -Value $SettingsJson -Encoding UTF8
-
-                $InstallCount++
             }
         }
     }
-}
 
-if ($InstallCount -gt 0) {
-    $Msg = ($Txt["SuccessDetail"] -f $InstallCount) + "`n`n" + $Txt["NextStep"]
-    [System.Windows.Forms.MessageBox]::Show($Msg, $Txt["Success"], [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-}
-else {
-    if ($VersionErrorCount -gt 0) {
-        [System.Windows.Forms.MessageBox]::Show($Txt["VerError"], $Txt["Title"], [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    # °á°ú ¸Ş½ÃÁö (¼º°ø½Ã¿¡¸¸ ¶ç¿ò, ½ÇÆĞ ½Ã Á¶¿ëÈ÷ Á¾·áÇÏ°Å³ª ÇÊ¿äÇÏ¸é ¶ç¿ò)
+    if ($Count -gt 0) {
+        [System.Windows.Forms.MessageBox]::Show($Txt["Success"] + "`n" + $Txt["NextStep"], "ohCHA", 0, 64)
     } else {
-        [System.Windows.Forms.MessageBox]::Show($Txt["NoMax"], $Txt["Title"], [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        [System.Windows.Forms.MessageBox]::Show($Txt["NoMax"] + " (2025+)", "Error", 0, 16)
     }
 }
