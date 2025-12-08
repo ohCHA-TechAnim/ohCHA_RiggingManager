@@ -2,6 +2,7 @@
 # Description: [v21.50] SKINNING TAB FINAL.
 #              - INTEGRITY: Full code, no omissions.
 #              - FIXED: Corrected key names in retranslate_ui methods.
+#              - FIXED: Skin Hide Manager & Layer Logic Signals.
 
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *

@@ -1,7 +1,6 @@
 # ohCHA_RigManager/01/src/utils/translator.py
-# Description: [v21.50] TRANSLATION FINAL FIX.
-#              - INTEGRITY: Full code, no omissions.
-#              - FIXED: Added missing Skinning Tab keys matching the screenshot.
+# Description: [v21.56] TRANSLATION FIXED.
+#              - ADDED: Missing keys ('view_label', 'search_ph') for Bone Explorer.
 
 class Translator:
     _instance = None
@@ -167,7 +166,7 @@ class Translator:
             "rig_btn_mirror_paste": {"en": "Mirror Paste", "kr": "대칭 붙여넣기", "jp": "ミラー貼付", "cn": "镜像粘贴"},
 
             # ========================================================
-            # [3] Skinning Tab - FIXED MISSING KEYS
+            # [3] Skinning Tab
             # ========================================================
             "skin_grp_mesh_hide": {"en": "Hide Mesh", "kr": "메시 숨기기", "jp": "メッシュ非表示", "cn": "隐藏网格"},
             "skin_hide_info_lbl": {"en": "Select Face/Element.", "kr": "면/엘리먼트 선택.", "jp": "面/要素選択。",
@@ -250,6 +249,10 @@ class Translator:
             "tip_val_sub": {"en": "Subtract", "kr": "빼기", "jp": "減算", "cn": "减去"},
             "tip_val_spinner": {"en": "Step", "kr": "단계", "jp": "ステップ", "cn": "步长"},
             "tip_val_preset": {"en": "Set", "kr": "설정", "jp": "設定", "cn": "设定"},
+
+            # [Bone List Explorer] ⭐️ Added Missing Keys
+            "view_label": {"en": "View:", "kr": "보기:", "jp": "表示:", "cn": "视图:"},
+            "search_ph": {"en": "Search bones...", "kr": "본 검색...", "jp": "ボーン検索...", "cn": "搜索骨骼..."},
 
             # [Layer Tool]
             "layer_btn_save": {"en": "Save Preset", "kr": "프리셋 저장", "jp": "プリセット保存", "cn": "保存预设"},

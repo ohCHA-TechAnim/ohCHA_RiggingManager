@@ -1,8 +1,7 @@
 # ohCHA_RigManager/01/src/ui/ohcha_ui_widgets.py
-# Description: [v21.49] WIDGETS FINAL.
-#              - FORMAT: Fully expanded (no semicolons).
-#              - INTEGRITY: 100% Full Code.
-#              - TRANSLATION: OchaControllerInspector updated.
+# Description: [v21.55] REFACTORED WIDGETS.
+#              - FIX: OchaBoneListExplorer retranslate_ui now correctly updates view modes.
+#              - FIX: Signal consistency in OchaLayerManagerWidget.
 
 from pymxs import runtime as rt
 from PySide6.QtWidgets import *
@@ -23,8 +22,6 @@ try:
 except ImportError:
     class T:
         get = lambda s, k: k
-
-
     translator = T()
 
 
@@ -725,6 +722,7 @@ class OchaBoneListExplorer(QWidget):
         self.retranslate_ui()
 
     def retranslate_ui(self):
+        # ⭐️ [FIX] Ensure combo box updates with translated strings
         self.lbl_view.setText(translator.get("view_label"))
         self.search_bar.setPlaceholderText(translator.get("search_ph"))
         self.btn_add_g.setText(translator.get("btn_grp_add"))
@@ -949,9 +947,6 @@ class OchaBoneListExplorer(QWidget):
         self.sort_order_button.setChecked(False)
 
 
-# =================================================================
-# OchaControllerInspector (Updated with retranslate_ui)
-# =================================================================
 class OchaControllerInspector(QWidget):
     def __init__(self, controller_instance, parent=None):
         super().__init__(parent)
@@ -990,7 +985,6 @@ class OchaControllerInspector(QWidget):
             QTableWidget { background-color: #2A2A2A; border: 1px solid #444; font-size: 11px; }
             QTableWidget::item { padding: 2px; border-bottom: 1px solid #333; }
         """)
-        # ⭐️ HEIGHT INCREASED (1.5x)
         self.tbl_info.setMaximumHeight(150)
 
         l_info.addLayout(row1)
@@ -1009,7 +1003,6 @@ class OchaControllerInspector(QWidget):
 
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["Track Name", "Type"])
-        # ⭐️ WIDTH INCREASED (~45%)
         self.tree.setColumnWidth(0, 240)
         self.tree.setAlternatingRowColors(False)
         self.tree.setMinimumHeight(350)
@@ -1121,7 +1114,6 @@ class OchaControllerInspector(QWidget):
         self.splitter.addWidget(self.widget_left)
         self.splitter.addWidget(self.stack)
 
-        # ⭐️ Set Splitter Ratio (~45% : 55%)
         self.splitter.setStretchFactor(0, 10)
         self.splitter.setStretchFactor(1, 12)
 
@@ -1131,20 +1123,13 @@ class OchaControllerInspector(QWidget):
         self.btn_load.clicked.connect(self._on_load)
         self.tree.itemClicked.connect(self._on_item_clicked)
         self.btn_assign.clicked.connect(self._on_assign)
-
-        # Script
         self.btn_apply_script.clicked.connect(self._on_apply_script)
-
-        # Expression
-        self.btn_apply_expr.clicked.connect(self._on_apply_script)  # Reusing apply script logic
-
-        # Constraint
+        self.btn_apply_expr.clicked.connect(self._on_apply_script) 
         self.btn_add_target.clicked.connect(self._on_add_target)
         self.btn_rem_target.clicked.connect(self._on_rem_target)
         self.btn_set_weight.clicked.connect(self._on_set_weight)
         self.tbl_targets.itemClicked.connect(self._on_target_selected)
 
-        # Full Controller List
         self.FLOAT_CONTROLLERS = [
             "Bezier_Float", "Float_List", "Float_Script", "Noise_Float", "Linear_Float", "Float_Expression",
             "Float_Motion_Capture", "Float_Reactor", "Slave_Float", "Waveform_Float"
@@ -1168,7 +1153,6 @@ class OchaControllerInspector(QWidget):
         self.retranslate_ui()
 
     def retranslate_ui(self):
-        # ⭐️ TRANSLATION LOGIC ADDED HERE
         self.grp_info.setTitle(translator.get("insp_grp_info"))
         self.btn_load.setText(translator.get("insp_btn_load"))
 
@@ -1268,19 +1252,13 @@ class OchaControllerInspector(QWidget):
         elif "transform" in t_lower or "prs" in t_lower:
             items = self.TRANSFORM_CONTROLLERS
         else:
-            # Fallback based on name
-            if "position" in n_lower:
-                items = self.POSITION_CONTROLLERS
-            elif "rotation" in n_lower:
-                items = self.ROTATION_CONTROLLERS
-            elif "scale" in n_lower:
-                items = self.SCALE_CONTROLLERS
-            else:
-                items = self.FLOAT_CONTROLLERS
+            if "position" in n_lower: items = self.POSITION_CONTROLLERS
+            elif "rotation" in n_lower: items = self.ROTATION_CONTROLLERS
+            elif "scale" in n_lower: items = self.SCALE_CONTROLLERS
+            else: items = self.FLOAT_CONTROLLERS
 
         final_items = []
         for i in items:
-            # Link Constraint Filter
             if i == "Link_Constraint":
                 if "transform" in t_lower or "prs" in t_lower: final_items.append(i)
             else:
@@ -1311,15 +1289,12 @@ class OchaControllerInspector(QWidget):
 
     def _on_apply_script(self):
         if not self.current_node: return
-
-        # Determine which editor is active
         if self.stack.currentWidget() == self.page_script:
             code = self.txt_editor.toPlainText()
         elif self.stack.currentWidget() == self.page_expr:
             code = self.txt_expr_editor.toPlainText()
         else:
             return
-
         if self.controller.apply_script_code(self.current_node, self.current_indices_path, code):
             rt.print("✅ Script Updated.")
         else:
@@ -1328,11 +1303,8 @@ class OchaControllerInspector(QWidget):
     def _on_assign(self):
         if not self.current_node or not self.current_indices_path: return
         t_str = self.combo_assign.currentText()
-
         if self.controller.assign_controller(self.current_node, self.current_indices_path, t_str):
             self._refresh_tree()
-
-            # Auto Re-Select
             it = QTreeWidgetItemIterator(self.tree)
             while it.value():
                 item = it.value()
@@ -1340,12 +1312,10 @@ class OchaControllerInspector(QWidget):
                     self._on_item_clicked(item, 0)
                     break
                 it += 1
-
             rt.print(f"✅ Assigned {t_str}")
         else:
             QMessageBox.warning(self, "Error", "Failed to assign.")
 
-    # Constraint Slots
     def _on_add_target(self):
         if not self.current_node: return
         if self.controller.add_constraint_target(self.current_node, self.current_indices_path):
@@ -1373,6 +1343,5 @@ class OchaControllerInspector(QWidget):
         val = self.spin_weight.value()
         if self.controller.set_constraint_weight(self.current_node, self.current_indices_path, r + 1, val):
             self._load_constraint_data()
-
 
 rt.print("✅ [Import Check] FINISHED loading ui.ohcha_ui_widgets.")

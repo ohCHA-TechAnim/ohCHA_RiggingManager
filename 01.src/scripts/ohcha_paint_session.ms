@@ -1,8 +1,9 @@
 /*
 Project:      ohCHA Rig Manager - Paint Session Manager
-Description:  [v1.3.2 Stable] Ensured data capture integrity.
+Description:  [v1.3.5 Refactor] Fixed Envelope Selection logic.
+              - Force Modify Mode and correct object selection for bone highlighting.
 */
-print ">>> [MS Paint] 1. 'ohcha_paint_session.ms' 파일 파싱 시작..."
+print ">>> [MS Paint] 1. 'ohcha_paint_session.ms' 파싱 시작..."
 struct ohCHAPaintSession_Struct
 (
     skinMod = undefined,
@@ -22,9 +23,9 @@ struct ohCHAPaintSession_Struct
     (
         try
         (
-            max modify mode
-            select obj
-            modPanel.setCurrentObject theSkinMod
+            if (getCommandPanelTaskMode() != #modify) do max modify mode
+            if (selection.count != 1 or selection[1] != obj) do select obj
+            if (modPanel.getCurrentObject() != theSkinMod) do modPanel.setCurrentObject theSkinMod
             windows.processPostedMessages()
             return true
         )
@@ -75,6 +76,7 @@ struct ohCHAPaintSession_Struct
         (
             _applySkinSettings theSkinMod
             subobjectlevel = 1
+            -- Toggle trick to force refresh
             if subobjectlevel != 1 do ( subobjectlevel = 0; subobjectlevel = 1 )
             redrawViews()
             return (subobjectlevel == 1)
@@ -82,19 +84,35 @@ struct ohCHAPaintSession_Struct
         catch ( return false )
     ),
 
+    -- ⭐️ [FIX] Robust Envelope Selection
     fn selectEnvelope obj boneId =
     (
+        if not (isValidNode obj) do return false
         local theSkinMod = undefined
         for m in obj.modifiers where classof m == Skin do (theSkinMod = m; break)
         if theSkinMod == undefined do return false
+        
         try
         (
-            if modPanel.getCurrentObject() != theSkinMod do modPanel.setCurrentObject theSkinMod
-            if (skinOps.isWeightToolOpen theSkinMod) then ( skinOps.selectBone theSkinMod boneId )
-            else ( if subobjectlevel != 1 do subobjectlevel = 1; skinOps.selectBone theSkinMod boneId )
+            -- 1. Ensure Modify Panel & Object Selection
+            if (getCommandPanelTaskMode() != #modify) do max modify mode
+            if (selection.count != 1 or selection[1] != obj) do select obj
+            
+            -- 2. Ensure Skin Modifier is active
+            if (modPanel.getCurrentObject() != theSkinMod) do modPanel.setCurrentObject theSkinMod
+            
+            -- 3. Ensure SubObject Level (Vertex)
+            if (subobjectLevel != 1) do subobjectLevel = 1
+            
+            -- 4. Select Bone
+            skinOps.selectBone theSkinMod boneId
+            redrawViews()
             return true
         )
-        catch(return false)
+        catch(
+            print ("❌ [SelectEnvelope Error] " + getCurrentException())
+            return false
+        )
     ),
 
     fn enterVertexSelectMode obj =

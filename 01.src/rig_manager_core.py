@@ -1,11 +1,12 @@
 # ohCHA_RigManager/01/src/rig_manager_core.py
-# Description: [v0.91_Beta] CORE UPDATE.
-#              - FEATURE: Reads 'data/settings.json' for initial language.
+# Description: [v21.56] CORE FIX.
+#              - FIX: Added missing import 'get_selected_skin_vert_indices'.
+#              - This fixes 'Find Bone' and 'Transfer' crashes.
 
 import os
 import sys
 import importlib
-import json  # Added for JSON reading
+import json
 import traceback
 from pymxs import runtime as rt
 from PySide6.QtWidgets import *
@@ -16,16 +17,16 @@ rt.print("✅ [Import Check] Loading rig_manager_core...")
 
 try:
     import utils.translator
-
     importlib.reload(utils.translator)
     translator = utils.translator.translator
 
-    from utils.ohcha_max_utils import OchaError
+    # ⭐️ [FIX] Added 'get_selected_skin_vert_indices' to imports
+    from utils.ohcha_max_utils import OchaError, get_selected_skin_vert_indices
+    
     from controllers import main_logic, edit_mesh_logic, skinning_logic, commands
     from controllers.skin_layer_controller import skin_controller_instance
     from controllers.group_controller import group_controller_instance
     from controllers import rigging_controller
-
     importlib.reload(rigging_controller)
 
     from utils.paths import get_project_root, get_icon_path
@@ -92,8 +93,6 @@ class RigManagerWindow(OchaBaseWindow):
         self.btn_hamburger.setObjectName("HamburgerButton")
 
         self.lang_menu = OchaLanguageMenu()
-
-        # ⭐️ [SYNC UI] Sync Language Menu Button with Loaded Language
         self.lang_menu.cur = initial_lang
         self.lang_menu._upd_btn()
 
@@ -189,6 +188,7 @@ class RigManagerWindow(OchaBaseWindow):
             if tid == "skinning":
                 btn.clicked.connect(self._on_skin_tab_selected)
 
+        # [1] Edit Mesh Tab Connections
         if "edit_mesh" in self.tabs:
             t = self.tabs["edit_mesh"]
             t.refreshRequested.connect(t._on_refresh)
@@ -197,10 +197,14 @@ class RigManagerWindow(OchaBaseWindow):
             t.fixPivotRequested.connect(lambda n: self._run_command(commands.FixPivotCommand(n)))
             t.finalizeRequested.connect(self._on_edit_finalize)
 
+        # [2] Skinning Tab Connections
         if "skinning" in self.tabs:
             t = self.tabs["skinning"]
+            # Skin Hide Manager Signals
             t.hideSelectionRequested.connect(lambda type, uns: self._run_simple(commands.SkinHideCommand(type, uns)))
             t.unhideAllRequested.connect(lambda: self._run_simple(commands.SkinUnhideAllCommand()))
+            
+            # Utils Signals
             t.removeUnusedBonesRequested.connect(self._on_remove_unused_bones)
             t.findInfluencingBonesRequested.connect(self._on_find_influencing_bones)
             t.clearBoneFilterRequested.connect(lambda: self._update_bone_explorer(True))
@@ -210,6 +214,8 @@ class RigManagerWindow(OchaBaseWindow):
             t.saveBoneListRequested.connect(self._on_save_bone_list)
             t.loadBoneListRequested.connect(self._on_load_bone_list)
             t.loadSkinRequested.connect(self._on_load_skin)
+            
+            # Weight Tool Signals
             t.weightSelectionRequested.connect(self._on_weight_selection)
             t.weightPresetRequested.connect(self._on_weight_preset)
             t.weightMathRequested.connect(self._on_weight_math)
@@ -219,8 +225,10 @@ class RigManagerWindow(OchaBaseWindow):
             t.btn_export_skin.clicked.connect(self._on_export_skin_clicked)
             t.btn_import_skin.clicked.connect(self._on_import_skin_clicked)
 
+            # Bone Explorer Signals
             if hasattr(t, "bone_explorer"):
                 explorer = t.bone_explorer
+                # Force viewport update on bone click
                 explorer.boneClicked.connect(self._on_skin_select_envelope)
                 explorer.viewOptionsChanged.connect(self._on_bone_explorer_view_changed)
                 explorer.addGroupClicked.connect(self._on_add_group)
@@ -229,6 +237,7 @@ class RigManagerWindow(OchaBaseWindow):
                 explorer.assignBonesClicked.connect(self._on_assign_bones)
                 explorer.removeInfluenceRequested.connect(self.tabs["skinning"]._on_remove_bone_influence)
 
+            # Layer Manager Signals
             mgr = t.layer_manager_widget
             mgr.layer_tree.currentItemChanged.connect(self._on_skin_item_selection_changed)
             mgr.addLayerClicked.connect(self._on_skin_add_layer)
@@ -298,8 +307,6 @@ class RigManagerWindow(OchaBaseWindow):
 
     def on_language_changed(self, lang_code):
         translator.set_language(lang_code)
-
-        # ⭐️ Save selection to settings.json for next time (Optional but good UX)
         try:
             root = get_project_root()
             if root:
@@ -310,7 +317,6 @@ class RigManagerWindow(OchaBaseWindow):
                     json.dump({"language": lang_code}, f)
         except:
             pass
-
         self.retranslate()
 
     def retranslate(self):
@@ -571,7 +577,14 @@ class RigManagerWindow(OchaBaseWindow):
         skin_tab = self.tabs.get("skinning")
         skin_mod = skin_controller_instance.native_skin_mod
         if not skin_tab or not skin_mod: return
-        vert_indices = get_selected_skin_vert_indices(skin_mod)
+        
+        # ⭐️ [FIX] Ensure function is available
+        try:
+            vert_indices = get_selected_skin_vert_indices(skin_mod)
+        except NameError:
+            rt.print("❌ Critical Import Error: get_selected_skin_vert_indices not found.")
+            return
+
         if not vert_indices:
             QMessageBox.information(self, translator.get("title_info"), translator.get("pop_find_bone_select_vert"))
             return
@@ -598,7 +611,10 @@ class RigManagerWindow(OchaBaseWindow):
                                 translator.get("pop_transfer_select_source"))
             return
         source_bone_id = selected_bone_ids[0]
+        
+        # ⭐️ [FIX] Use imported function
         vert_indices = get_selected_skin_vert_indices(skin_controller_instance.native_skin_mod)
+        
         if not vert_indices:
             QMessageBox.warning(self, translator.get("title_selection_error"),
                                 translator.get("pop_transfer_select_verts"))
@@ -682,14 +698,15 @@ class RigManagerWindow(OchaBaseWindow):
         layer_idx = self._get_active_layer_index()
         skin_controller_instance.apply_smart_heal_to_active_layer(ui_layer_index=layer_idx, tolerance=0.1)
 
+    # ⭐️ [FIXED] Force Modify Panel and Select
     def _on_skin_select_envelope(self, bone_id: int):
         if skin_controller_instance.node:
             try:
-                if rt.skinOps.GetSelectedBone(skin_controller_instance.native_skin_mod) != bone_id:
-                    self._last_selected_bone_id = bone_id
-                    rt.ohCHA_PaintSession.selectEnvelope(skin_controller_instance.node, bone_id)
-            except Exception:
+                # Force MaxScript to handle selection regardless of current panel state
                 rt.ohCHA_PaintSession.selectEnvelope(skin_controller_instance.node, bone_id)
+                self._last_selected_bone_id = bone_id
+            except Exception as e:
+                rt.print(f"❌ Selection Error: {e}")
 
     def _on_skin_paint_commit_toggled(self, ui_index: int):
         skin_tab = self.tabs.get("skinning")

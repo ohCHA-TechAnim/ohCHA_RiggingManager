@@ -1,7 +1,7 @@
 -- ohCHA_RigManager/01/src/scripts/ohcha_skin_logic.ms
 /*
 Project:      ohCHA Rig Manager - Skin Logic Module
-Description:  [v2.5.2] Added 'applyBulkSkinData' for performance optimization.
+Description:  [v2.6.2] Restored original logic + Added Auto Edit_Poly support.
 */
 struct OhchaSkinLogic_Struct
 (
@@ -88,20 +88,56 @@ struct OhchaSkinLogic_Struct
     fn hideSelection typeName isUnselected =
     (
         if selection.count != 1 do return false
-        local obj = selection[1]; local skinMod = undefined; local targetPoly = undefined; local isBaseObj = false
+        local obj = selection[1]
+        local skinMod = undefined
+        local targetPoly = undefined
+        local isBaseObj = false
+
+        -- 1. Skin 찾기
         for m in obj.modifiers do (
             if classof m == Skin do skinMod = m
             if skinMod != undefined and classof m == Edit_Poly do ( targetPoly = m; break )
         )
+
+        -- 2. Base Object 확인
         if targetPoly == undefined and classof obj.baseobject == Editable_Poly do ( targetPoly = obj; isBaseObj = true )
-        if skinMod == undefined or targetPoly == undefined do ( print "⚠️ [ohCHA] Skin 혹은 대상 Poly를 찾을 수 없습니다."; return false )
+
+        -- ⭐️ [FIX] Sphere 등 Primitive일 경우 Edit Poly 자동 추가
+        if skinMod != undefined and targetPoly == undefined do (
+            local skinIdx = modPanel.getModifierIndex obj skinMod
+            -- Skin 바로 아래에 추가 (Skin이 최상단이면 index 1, 그 아래에 추가하려면 index를 활용)
+            -- MaxScript에서 addModifier는 기본적으로 맨 위에 쌓임. before 옵션 필요.
+            -- Skin Index가 N이면, Skin 바로 아래는 N (addModifier ... before:N)
+            
+            if skinIdx > 0 do (
+                local newPoly = Edit_Poly()
+                newPoly.name = "ohCHA_Hide_Poly"
+                addModifier obj newPoly before:skinIdx
+                targetPoly = newPoly
+                print "✨ [ohCHA] Primitive detected. Added 'Edit Poly' for hiding."
+            )
+        )
+
+        if skinMod == undefined or targetPoly == undefined do ( 
+            print "⚠️ [ohCHA] Skin 혹은 대상 Poly를 찾을 수 없습니다."
+            return false 
+        )
+
         disableSceneRedraw()
         try (
             undo "ohCHA Mesh Hide" on (
+                -- Skin에서 선택된 버텍스 가져오기
+                modPanel.setCurrentObject skinMod
                 local selVerts = _getSkinSelectionBitArray(skinMod)
+                
+                -- Hide 적용
                 if isBaseObj then ( _processBaseObject obj selVerts typeName isUnselected )
                 else ( _processModifier targetPoly selVerts typeName isUnselected )
-                modPanel.setCurrentObject skinMod; subobjectLevel = 1; skinOps.SelectVertices skinMod #{}
+                
+                -- 다시 Skin으로 포커스 및 버텍스 선택 해제 (깔끔하게)
+                modPanel.setCurrentObject skinMod
+                subobjectLevel = 1
+                -- skinOps.SelectVertices skinMod #{} -- 선택 유지 원할시 주석 처리
             )
         ) catch ( format "❌ [Error] %\n" (getCurrentException()) )
         enableSceneRedraw(); redrawViews(); true
