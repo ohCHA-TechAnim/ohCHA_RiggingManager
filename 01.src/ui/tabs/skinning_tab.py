@@ -1,8 +1,7 @@
 # ohCHA_RigManager/01/src/ui/tabs/skinning_tab.py
-# Description: [v21.50] SKINNING TAB FINAL.
-#              - INTEGRITY: Full code, no omissions.
-#              - FIXED: Corrected key names in retranslate_ui methods.
-#              - FIXED: Skin Hide Manager & Layer Logic Signals.
+# Description: [v22.05] CRASH FIX.
+#              - FIX: Explicit parenting (QWidget(self)) to prevent early Garbage Collection.
+#              - FIX: Stabilized layout assignment logic.
 
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
@@ -24,10 +23,8 @@ try:
     from utils.paths import get_icon_path
     from controllers.skin_layer_controller import skin_controller_instance
 except ImportError:
-    class T:
-        get = lambda s, k: k;
-    translator = T();
-    get_icon_path = lambda n: None
+    class T: get = lambda s, k: k
+    translator = T(); get_icon_path = lambda n: None
     class OchaCollapsibleGroup(QGroupBox):
         def __init__(self, t, e=True): super().__init__(t); self.setContentLayout = self.setLayout
         def setHeaderText(self, t): self.setTitle(t)
@@ -40,6 +37,212 @@ except ImportError:
     skin_controller_instance = None
 
 
+# ============================================================================
+# [1] Skin Hide Widget (Mesh Visibility)
+# ============================================================================
+class SkinHideWidget(QWidget):
+    hideFaceRequested = Signal(bool)
+    hideElementRequested = Signal(bool)
+    unhideAllRequested = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(5)
+
+        # Header Info & Toggle
+        header_layout = QHBoxLayout()
+        # ⭐️ [FIX] Explicit parent 'self' to prevent GC
+        self.lbl_info = QLabel(self)
+        self.lbl_info.setObjectName("DescLabel")
+        
+        toggle_layout = QHBoxLayout()
+        toggle_layout.setSpacing(8)
+        self.lbl_unselected = QLabel(self)
+        self.lbl_unselected.setObjectName("ToggleLabel")
+        self.toggle_unselected = OchaAnimatedToggle(width=46, height=24, parent=self)
+        
+        toggle_layout.addWidget(self.lbl_unselected)
+        toggle_layout.addWidget(self.toggle_unselected)
+        
+        header_layout.addWidget(self.lbl_info, 1)
+        header_layout.addLayout(toggle_layout)
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+        self.btn_face = QPushButton(self)
+        self.btn_element = QPushButton(self)
+        
+        blue_style = "background-color: #03A9F4; color: white; padding: 8px; font-weight: bold; border-radius: 4px;"
+        green_style = "background-color: #2ECC71; color: white; padding: 8px; font-weight: bold; border-radius: 4px;"
+        
+        self.btn_face.setStyleSheet(blue_style)
+        self.btn_element.setStyleSheet(blue_style)
+        
+        btn_layout.addWidget(self.btn_face)
+        btn_layout.addWidget(self.btn_element)
+
+        self.btn_unhide = QPushButton(self)
+        self.btn_unhide.setStyleSheet(green_style)
+
+        # Assembly
+        layout.addLayout(header_layout)
+        line = QFrame(self)
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        layout.addWidget(line)
+        layout.addLayout(btn_layout)
+        layout.addWidget(self.btn_unhide)
+
+        # Connections
+        self.btn_face.clicked.connect(lambda: self.hideFaceRequested.emit(self.toggle_unselected.isChecked()))
+        self.btn_element.clicked.connect(lambda: self.hideElementRequested.emit(self.toggle_unselected.isChecked()))
+        self.btn_unhide.clicked.connect(self.unhideAllRequested.emit)
+
+        self.retranslate_ui()
+
+    def retranslate_ui(self):
+        # ⭐️ Safely update text
+        if hasattr(self, 'lbl_info'):
+            self.lbl_info.setText(f"ℹ️ {translator.get('skin_hide_info_lbl')}")
+            self.lbl_unselected.setText(translator.get("skin_lbl_hide_unselected"))
+            self.toggle_unselected.setToolTip(translator.get("tip_hide_invert"))
+            self.btn_face.setText(f"▣ {translator.get('skin_btn_face')}")
+            self.btn_element.setText(f"❒ {translator.get('skin_btn_element')}")
+            self.btn_unhide.setText(f"👁️ {translator.get('skin_btn_unhide')}")
+
+
+# ============================================================================
+# [2] Skin Utilities Widget (Tools & Weight Operations)
+# ============================================================================
+class SkinUtilsWidget(QWidget):
+    # Signals
+    removeUnusedRequested = Signal()
+    findBoneRequested = Signal()
+    clearFilterRequested = Signal()
+    transferRequested = Signal()
+    pruneRequested = Signal()
+    saveListRequested = Signal()
+    loadListRequested = Signal()
+    saveSkinRequested = Signal()
+    loadSkinRequested = Signal()
+    exportDataRequested = Signal()
+    importDataRequested = Signal()
+    
+    # Weight Tool Signals
+    weightSelectionRequested = Signal(str)
+    weightPresetRequested = Signal(float)
+    weightMathRequested = Signal(str, float)
+    weightClipboardRequested = Signal(str)
+    weightSmoothRequested = Signal()
+    weightHealRequested = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(6)
+
+        def mk_btn(obj_name="UtilBtn", style=""):
+            b = QPushButton(self) # ⭐️ Explicit Parent
+            b.setObjectName(obj_name)
+            if style: b.setStyleSheet(style)
+            b.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            b.setMinimumHeight(24)
+            return b
+
+        # Row 1
+        row1 = QHBoxLayout()
+        row1.setSpacing(2)
+        self.btn_rem_unused = mk_btn()
+        self.btn_find_bone = mk_btn()
+        self.btn_clear = mk_btn()
+        self.btn_transfer = mk_btn(style="background-color: #D35400; color: white;")
+        for b in [self.btn_rem_unused, self.btn_find_bone, self.btn_clear, self.btn_transfer]:
+            row1.addWidget(b)
+
+        # Row 2
+        row2 = QHBoxLayout()
+        row2.setSpacing(2)
+        self.btn_prune = mk_btn()
+        self.btn_save_list = mk_btn()
+        self.btn_load_list = mk_btn()
+        self.btn_save_env = mk_btn(style="background-color: #27AE60; color: white;")
+        self.btn_load_env = mk_btn(style="background-color: #27AE60; color: white;")
+        for b in [self.btn_prune, self.btn_save_list, self.btn_load_list, self.btn_save_env, self.btn_load_env]:
+            row2.addWidget(b)
+
+        # Row 3
+        row3 = QHBoxLayout()
+        row3.setSpacing(2)
+        self.btn_export = mk_btn()
+        self.btn_import = mk_btn(style="background-color: #8E44AD; color: white;")
+        row3.addWidget(self.btn_export)
+        row3.addWidget(self.btn_import)
+
+        # Weight Tool
+        self.weight_tool = OchaWeightToolWidget(self)
+
+        # Assembly
+        layout.addLayout(row1)
+        layout.addLayout(row2)
+        layout.addLayout(row3)
+        layout.addSpacing(4)
+        layout.addWidget(self.weight_tool)
+
+        # Connections
+        self.btn_rem_unused.clicked.connect(self.removeUnusedRequested.emit)
+        self.btn_find_bone.clicked.connect(self.findBoneRequested.emit)
+        self.btn_clear.clicked.connect(self.clearFilterRequested.emit)
+        self.btn_transfer.clicked.connect(self.transferRequested.emit)
+        self.btn_prune.clicked.connect(self.pruneRequested.emit)
+        self.btn_save_list.clicked.connect(self.saveListRequested.emit)
+        self.btn_load_list.clicked.connect(self.loadListRequested.emit)
+        self.btn_save_env.clicked.connect(self.saveSkinRequested.emit)
+        self.btn_load_env.clicked.connect(self.loadSkinRequested.emit)
+        self.btn_export.clicked.connect(self.exportDataRequested.emit)
+        self.btn_import.clicked.connect(self.importDataRequested.emit)
+
+        # Weight Tool Pass-through
+        self.weight_tool.selectionChanged.connect(self.weightSelectionRequested.emit)
+        self.weight_tool.presetClicked.connect(self.weightPresetRequested.emit)
+        self.weight_tool.mathClicked.connect(self.weightMathRequested.emit)
+        self.weight_tool.clipboardClicked.connect(self.weightClipboardRequested.emit)
+        self.weight_tool.smoothClicked.connect(self.weightSmoothRequested.emit)
+        self.weight_tool.healClicked.connect(self.weightHealRequested.emit)
+
+        self.retranslate_ui()
+
+    def retranslate_ui(self):
+        self.btn_rem_unused.setText(translator.get("btn_rem_useless"))
+        self.btn_rem_unused.setToolTip(translator.get("tip_rem_useless"))
+        self.btn_find_bone.setText(translator.get("btn_bnlist_vert"))
+        self.btn_find_bone.setToolTip(translator.get("tip_bnlist_vert"))
+        self.btn_clear.setText(translator.get("btn_clear_filter"))
+        self.btn_clear.setToolTip(translator.get("tip_clear_filter"))
+        self.btn_transfer.setText(translator.get("btn_transfer"))
+        self.btn_transfer.setToolTip(translator.get("tip_transfer"))
+        self.btn_prune.setText(translator.get("btn_rem_zero"))
+        self.btn_prune.setToolTip(translator.get("tip_rem_zero"))
+        self.btn_save_list.setText(translator.get("btn_save_bnlist"))
+        self.btn_save_list.setToolTip(translator.get("tip_save_bnlist"))
+        self.btn_load_list.setText(translator.get("btn_load_bnlist"))
+        self.btn_load_list.setToolTip(translator.get("tip_load_bnlist"))
+        self.btn_save_env.setText(translator.get("btn_save_skin"))
+        self.btn_save_env.setToolTip(translator.get("tip_save_skin"))
+        self.btn_load_env.setText(translator.get("btn_load_skin"))
+        self.btn_load_env.setToolTip(translator.get("tip_load_skin"))
+        self.btn_export.setText(translator.get("btn_export_skindata"))
+        self.btn_export.setToolTip(translator.get("tip_export_skindata"))
+        self.btn_import.setText(translator.get("btn_import_skindata"))
+        self.btn_import.setToolTip(translator.get("tip_import_skindata"))
+        self.weight_tool.retranslate_ui()
+
+
+# ============================================================================
+# [3] Layer Manager Widget
+# ============================================================================
 class OchaLayerManagerWidget(QFrame):
     addLayerClicked = Signal()
     removeLayerClicked = Signal(int)
@@ -69,62 +272,46 @@ class OchaLayerManagerWidget(QFrame):
         main_layout.setSpacing(4)
 
         top_layout = QHBoxLayout()
-        self.btn_import = QPushButton()
-        self.btn_collapse = QPushButton()
+        self.btn_import = QPushButton(self)
+        self.btn_collapse = QPushButton(self)
         top_layout.addWidget(self.btn_import, 1)
         top_layout.addWidget(self.btn_collapse, 1)
 
-        self.layer_tree = QTreeWidget()
+        self.layer_tree = QTreeWidget(self)
         self.layer_tree.setHeaderHidden(True)
 
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(2)
+        ctrl_btn_style = "QPushButton { background-color: #444; color: #EEE; border-radius: 3px; font-weight: bold; font-size: 14px; border: 1px solid #555; } QPushButton:hover { background-color: #555; } QPushButton:pressed { background-color: #333; }"
 
-        ctrl_btn_style = """
-            QPushButton { 
-                background-color: #444; 
-                color: #EEE; 
-                border-radius: 3px; 
-                font-weight: bold; 
-                font-size: 14px; 
-                border: 1px solid #555;
-            }
-            QPushButton:hover { background-color: #555; }
-            QPushButton:pressed { background-color: #333; }
-        """
-
-        self.btn_add = QPushButton("+")
-        self.btn_rem = QPushButton("-")
-        self.btn_up = QPushButton("▲")
-        self.btn_down = QPushButton("▼")
+        self.btn_add = QPushButton("+", self)
+        self.btn_rem = QPushButton("-", self)
+        self.btn_up = QPushButton("▲", self)
+        self.btn_down = QPushButton("▼", self)
 
         for b in [self.btn_add, self.btn_rem, self.btn_up, self.btn_down]:
             b.setMinimumHeight(30)
             b.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             b.setStyleSheet(ctrl_btn_style)
-            b.setObjectName("LayerButton")
             controls_layout.addWidget(b)
 
-        line = QFrame()
+        line = QFrame(self)
         line.setFrameShape(QFrame.Shape.VLine)
         line.setFrameShadow(QFrame.Shadow.Sunken)
         controls_layout.addWidget(line)
 
-        self.btn_manual_edit = QPushButton()
-        self.btn_manual_edit.setFixedHeight(30)
-        self.btn_manual_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        self.btn_paint_commit = QPushButton()
-        self.btn_paint_commit.setFixedHeight(30)
-        self.btn_paint_commit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        self.btn_paint_options = QPushButton()
-        self.btn_paint_options.setFixedHeight(30)
-        self.btn_paint_options.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.btn_manual_edit = QPushButton(self)
+        self.btn_paint_commit = QPushButton(self)
+        self.btn_paint_options = QPushButton(self)
+        
+        for b in [self.btn_manual_edit, self.btn_paint_commit, self.btn_paint_options]:
+            b.setFixedHeight(30)
+            b.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        
         self.btn_paint_options.setEnabled(False)
 
-        self.lbl_blend = QLabel()
-        self.chk_blend_mode = OchaAnimatedToggle(width=40, height=20)
+        self.lbl_blend = QLabel(self)
+        self.chk_blend_mode = OchaAnimatedToggle(width=40, height=20, parent=self)
         self.chk_blend_mode.setChecked(False)
         self.chk_blend_mode.setEnabled(False)
 
@@ -137,7 +324,7 @@ class OchaLayerManagerWidget(QFrame):
         blend_layout.addWidget(self.chk_blend_mode)
         controls_layout.addLayout(blend_layout)
 
-        self.btn_inject = QPushButton()
+        self.btn_inject = QPushButton(self)
         self.btn_inject.setStyleSheet("background-color: #E74C3C; color: white; font-weight: bold; padding: 6px;")
 
         main_layout.addLayout(top_layout)
@@ -145,6 +332,7 @@ class OchaLayerManagerWidget(QFrame):
         main_layout.addLayout(controls_layout)
         main_layout.addWidget(self.btn_inject)
 
+        # Connections
         self.btn_add.clicked.connect(lambda c=False: self.addLayerClicked.emit())
         self.btn_rem.clicked.connect(self._on_remove_clicked)
         self.btn_up.clicked.connect(self._on_move_up_clicked)
@@ -156,7 +344,6 @@ class OchaLayerManagerWidget(QFrame):
         self.btn_inject.clicked.connect(lambda c=False: self.injectToSkinClicked.emit())
         self.btn_import.clicked.connect(lambda c=False: self.importFromSelectionClicked.emit())
         self.btn_collapse.clicked.connect(lambda c=False: self.collapseLayersClicked.emit())
-
         self.layer_tree.currentItemChanged.connect(self._on_selection_changed)
 
         self.set_session_active(False)
@@ -227,7 +414,6 @@ class OchaLayerManagerWidget(QFrame):
 
         self.btn_paint_commit.setEnabled(has_selection and not is_base and not is_mask)
         self.btn_manual_edit.setEnabled(has_selection and not is_mask)
-
         self.btn_rem.setEnabled(has_selection and not is_base and not is_mask)
         self.btn_up.setEnabled(has_selection and not is_base and not is_mask and layer_index > 0)
         self.btn_down.setEnabled(has_selection and not is_base and not is_mask and layer_index < cnt - 2)
@@ -338,7 +524,11 @@ class OchaLayerManagerWidget(QFrame):
             self._on_selection_changed(self.layer_tree.currentItem(), None)
 
 
+# ============================================================================
+# [4] Main Skinning Tab (Assembler)
+# ============================================================================
 class SkinningTab(QWidget):
+    # Signals (Must match existing core connections exactly)
     hideSelectionRequested = Signal(str, bool)
     unhideAllRequested = Signal()
     removeUnusedBonesRequested = Signal()
@@ -361,9 +551,7 @@ class SkinningTab(QWidget):
         super().__init__(parent)
 
         self.setStyleSheet("""
-            QPushButton#UtilBtn { 
-                background-color: #555; color: white; border-radius: 3px; padding: 4px; font-size: 10px; 
-            }
+            QPushButton#UtilBtn { background-color: #555; color: white; border-radius: 3px; padding: 4px; font-size: 10px; }
             QPushButton#UtilBtn:hover { background-color: #666; }
             QLabel#DescLabel { color: #888; font-size: 12px; padding-bottom: 5px; }
             QLabel#ToggleLabel { color: #D0D0D0; font-weight: bold; font-size: 12px; }
@@ -373,151 +561,79 @@ class SkinningTab(QWidget):
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(10)
 
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+        # --- Left Panel (Splitter Left) ---
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
         left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(8)
 
+        # 1. Hide Group
         self.g_hide = OchaCollapsibleGroup("Mesh Hide", False)
-        self.lbl_info = QLabel()
-        self.lbl_info.setObjectName("DescLabel")
-        self.lbl_info.setWordWrap(True)
+        # ⭐️ Fix: Add widget to collapsible using a wrapper layout
+        self.hide_widget = SkinHideWidget(self)
+        gh_layout = QVBoxLayout()
+        gh_layout.setContentsMargins(0,0,0,0)
+        gh_layout.addWidget(self.hide_widget)
+        self.g_hide.setContentLayout(gh_layout)
 
-        self.toggle_widget = QWidget()
-        toggle_layout = QHBoxLayout(self.toggle_widget)
-        toggle_layout.setContentsMargins(0, 0, 0, 0)
-        toggle_layout.setSpacing(8)
-
-        self.lbl_unselected = QLabel()
-        self.lbl_unselected.setObjectName("ToggleLabel")
-        self.toggle_unselected = OchaAnimatedToggle(width=46, height=24)
-
-        toggle_layout.addWidget(self.lbl_unselected)
-        toggle_layout.addWidget(self.toggle_unselected)
-
-        header_container = QWidget()
-        header_layout = QHBoxLayout(header_container)
-        header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.addWidget(self.lbl_info, 1)
-        header_layout.addWidget(self.toggle_widget, 0)
-
-        self.btn_f = QPushButton()
-        self.btn_f.setStyleSheet("background-color: #03A9F4; color: white; padding: 8px; font-weight: bold;")
-        self.btn_e = QPushButton()
-        self.btn_e.setStyleSheet("background-color: #03A9F4; color: white; padding: 8px; font-weight: bold;")
-        self.btn_u = QPushButton()
-        self.btn_u.setStyleSheet("background-color: #2ECC71; color: white; padding: 8px; font-weight: bold;")
-
-        btn_container = QWidget()
-        btn_layout = QHBoxLayout(btn_container)
-        btn_layout.setContentsMargins(0, 5, 0, 5)
-        btn_layout.setSpacing(8)
-        btn_layout.addWidget(self.btn_f)
-        btn_layout.addWidget(self.btn_e)
-
-        ghl = QVBoxLayout()
-        ghl.setSpacing(5)
-        ghl.addWidget(header_container)
-        ghl.addWidget(QFrame(frameShape=QFrame.HLine, frameShadow=QFrame.Sunken))
-        ghl.addSpacing(5)
-        ghl.addWidget(btn_container)
-        ghl.addWidget(self.btn_u)
-        self.g_hide.setContentLayout(ghl)
-
+        # 2. Layer Group
         self.g_layer = OchaCollapsibleGroup("Layer Skinning", True)
-        lw = QVBoxLayout()
+        self.layer_manager_widget = OchaLayerManagerWidget(self)
+        gl_layout = QVBoxLayout()
+        gl_layout.setContentsMargins(0,0,0,0)
+        gl_layout.addWidget(self.layer_manager_widget)
+        self.g_layer.setContentLayout(gl_layout)
 
-        self.layer_manager_widget = OchaLayerManagerWidget()
-        lw.addWidget(self.layer_manager_widget)
-        lw.addSpacing(6)
+        # 3. Utils Group
+        self.g_utils = OchaCollapsibleGroup("Utilities & Tools", True)
+        self.utils_widget = SkinUtilsWidget(self)
+        gu_layout = QVBoxLayout()
+        gu_layout.setContentsMargins(0,0,0,0)
+        gu_layout.addWidget(self.utils_widget)
+        self.g_utils.setContentLayout(gu_layout)
 
-        u_row1 = QHBoxLayout()
-        u_row1.setSpacing(2)
-        self.btn_rem_useless = QPushButton()
-        self.btn_rem_useless.setObjectName("UtilBtn")
-        self.btn_bnlist_vert = QPushButton()
-        self.btn_bnlist_vert.setObjectName("UtilBtn")
-        self.btn_clear_filter = QPushButton()
-        self.btn_clear_filter.setObjectName("UtilBtn")
-        self.btn_transfer = QPushButton()
-        self.btn_transfer.setObjectName("UtilBtn")
-        self.btn_transfer.setStyleSheet("background-color: #D35400; color: white;")
-
-        for b in [self.btn_rem_useless, self.btn_bnlist_vert, self.btn_clear_filter, self.btn_transfer]:
-            b.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-            b.setMinimumHeight(24)
-            u_row1.addWidget(b)
-
-        u_row2 = QHBoxLayout()
-        u_row2.setSpacing(2)
-        self.btn_rem_zero = QPushButton()
-        self.btn_rem_zero.setObjectName("UtilBtn")
-        self.btn_save_bnlist = QPushButton()
-        self.btn_save_bnlist.setObjectName("UtilBtn")
-        self.btn_load_bnlist = QPushButton()
-        self.btn_load_bnlist.setObjectName("UtilBtn")
-        self.btn_save_skin = QPushButton()
-        self.btn_save_skin.setObjectName("UtilBtn")
-        self.btn_save_skin.setStyleSheet("background-color: #27AE60; color: white;")
-        self.btn_load_skin = QPushButton()
-        self.btn_load_skin.setObjectName("UtilBtn")
-        self.btn_load_skin.setStyleSheet("background-color: #27AE60; color: white;")
-
-        for b in [self.btn_rem_zero, self.btn_save_bnlist, self.btn_load_bnlist, self.btn_save_skin,
-                  self.btn_load_skin]:
-            b.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-            b.setMinimumHeight(24)
-            u_row2.addWidget(b)
-
-        u_row3 = QHBoxLayout()
-        u_row3.setSpacing(2)
-        self.btn_export_skin = QPushButton()
-        self.btn_export_skin.setObjectName("UtilBtn")
-        self.btn_import_skin = QPushButton()
-        self.btn_import_skin.setObjectName("UtilBtn")
-        self.btn_import_skin.setStyleSheet("background-color: #8E44AD; color: white;")
-
-        u_row3.addWidget(self.btn_export_skin)
-        u_row3.addWidget(self.btn_import_skin)
-
-        lw.addLayout(u_row1)
-        lw.addLayout(u_row2)
-        lw.addLayout(u_row3)
-        lw.addSpacing(6)
-
-        self.weight_tool = OchaWeightToolWidget()
-        lw.addWidget(self.weight_tool)
-
-        self.g_layer.setContentLayout(lw)
-
+        # Add to Left Panel
         left_layout.addWidget(self.g_hide)
         left_layout.addWidget(self.g_layer)
+        left_layout.addWidget(self.g_utils)
         left_layout.addStretch(1)
 
-        self.bone_explorer = OchaBoneListExplorer()
+        # --- Right Panel (Bone Explorer) ---
+        self.bone_explorer = OchaBoneListExplorer(self)
+
+        # Splitter Assembly
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(left_panel)
         splitter.addWidget(self.bone_explorer)
-        splitter.setSizes([320, 200])
+        splitter.setSizes([340, 200])
+
         main_layout.addWidget(splitter)
 
-        self.btn_f.clicked.connect(
-            lambda c=False: self.hideSelectionRequested.emit("face", self.toggle_unselected.isChecked()))
-        self.btn_e.clicked.connect(
-            lambda c=False: self.hideSelectionRequested.emit("element", self.toggle_unselected.isChecked()))
-        self.btn_u.clicked.connect(lambda c=False: self.unhideAllRequested.emit())
+        # --- Signal Wiring ---
+        self.hide_widget.hideFaceRequested.connect(lambda inv: self.hideSelectionRequested.emit("face", inv))
+        self.hide_widget.hideElementRequested.connect(lambda inv: self.hideSelectionRequested.emit("element", inv))
+        self.hide_widget.unhideAllRequested.connect(self.unhideAllRequested.emit)
 
-        self.btn_rem_useless.clicked.connect(self.removeUnusedBonesRequested.emit)
-        self.btn_bnlist_vert.clicked.connect(self.findInfluencingBonesRequested.emit)
-        self.btn_clear_filter.clicked.connect(self.clearBoneFilterRequested.emit)
-        self.btn_transfer.clicked.connect(self.transferWeightsRequested.emit)
-        self.btn_rem_zero.clicked.connect(self.removeZeroWeightsRequested.emit)
-        self.btn_save_bnlist.clicked.connect(self.saveBoneListRequested.emit)
-        self.btn_load_bnlist.clicked.connect(self.loadBoneListRequested.emit)
-        self.btn_save_skin.clicked.connect(self.saveSkinRequested.emit)
-        self.btn_load_skin.clicked.connect(self.loadSkinRequested.emit)
+        self.utils_widget.removeUnusedRequested.connect(self.removeUnusedBonesRequested.emit)
+        self.utils_widget.findBoneRequested.connect(self.findInfluencingBonesRequested.emit)
+        self.utils_widget.clearFilterRequested.connect(self.clearBoneFilterRequested.emit)
+        self.utils_widget.transferRequested.connect(self.transferWeightsRequested.emit)
+        self.utils_widget.pruneRequested.connect(self.removeZeroWeightsRequested.emit)
+        self.utils_widget.saveListRequested.connect(self.saveBoneListRequested.emit)
+        self.utils_widget.loadListRequested.connect(self.loadBoneListRequested.emit)
+        self.utils_widget.saveSkinRequested.connect(self.saveSkinRequested.emit)
+        self.utils_widget.loadSkinRequested.connect(self.loadSkinRequested.emit)
+        
+        # Aliases for core connection
+        self.btn_export_skin = self.utils_widget.btn_export
+        self.btn_import_skin = self.utils_widget.btn_import
 
-        self.btn_export_skin.clicked.connect(self._on_export_skin_clicked)
-        self.btn_import_skin.clicked.connect(self._on_import_skin_clicked)
+        self.utils_widget.weightSelectionRequested.connect(self.weightSelectionRequested.emit)
+        self.utils_widget.weightPresetRequested.connect(self.weightPresetRequested.emit)
+        self.utils_widget.weightMathRequested.connect(self.weightMathRequested.emit)
+        self.utils_widget.weightClipboardRequested.connect(self.weightClipboardRequested.emit)
+        self.utils_widget.weightSmoothRequested.connect(self.weightSmoothRequested.emit)
+        self.utils_widget.weightHealRequested.connect(self.weightHealRequested.emit)
 
         if skin_controller_instance:
             self.layer_manager_widget.toggleLayerClicked.connect(
@@ -532,61 +648,15 @@ class SkinningTab(QWidget):
             )
 
         self.bone_explorer.removeInfluenceRequested.connect(self._on_remove_bone_influence)
-
-        self.weight_tool.selectionChanged.connect(self.weightSelectionRequested.emit)
-        self.weight_tool.presetClicked.connect(self.weightPresetRequested.emit)
-        self.weight_tool.mathClicked.connect(self.weightMathRequested.emit)
-        self.weight_tool.clipboardClicked.connect(self.weightClipboardRequested.emit)
-        self.weight_tool.smoothClicked.connect(self.weightSmoothRequested.emit)
-        self.weight_tool.healClicked.connect(self.weightHealRequested.emit)
-
         self.retranslate_ui()
 
     def retranslate_ui(self):
         self.g_hide.setHeaderText(translator.get("skin_grp_mesh_hide"))
-        self.lbl_info.setText(f"ℹ️ {translator.get('skin_hide_info_lbl')}")
-        self.lbl_unselected.setText(translator.get("skin_lbl_hide_unselected"))
-        self.toggle_unselected.setToolTip(translator.get("tip_hide_invert"))
-        self.btn_f.setText(f"▣ {translator.get('skin_btn_face')}")
-        self.btn_e.setText(f"❒ {translator.get('skin_btn_element')}")
-        self.btn_u.setText(f"👁️ {translator.get('skin_btn_unhide')}")
-
+        self.hide_widget.retranslate_ui()
         self.g_layer.setHeaderText(translator.get("skin_grp_layers"))
         self.layer_manager_widget.retranslate_ui()
-
-        self.btn_rem_useless.setText(translator.get("btn_rem_useless"))
-        self.btn_rem_useless.setToolTip(translator.get("tip_rem_useless"))
-
-        self.btn_bnlist_vert.setText(translator.get("btn_bnlist_vert"))
-        self.btn_bnlist_vert.setToolTip(translator.get("tip_bnlist_vert"))
-
-        self.btn_clear_filter.setText(translator.get("btn_clear_filter"))
-        self.btn_clear_filter.setToolTip(translator.get("tip_clear_filter"))
-
-        self.btn_transfer.setText(translator.get("btn_transfer"))
-        self.btn_transfer.setToolTip(translator.get("tip_transfer"))
-
-        self.btn_rem_zero.setText(translator.get("btn_rem_zero"))
-        self.btn_rem_zero.setToolTip(translator.get("tip_rem_zero"))
-
-        self.btn_save_bnlist.setText(translator.get("btn_save_bnlist"))
-        self.btn_save_bnlist.setToolTip(translator.get("tip_save_bnlist"))
-
-        self.btn_load_bnlist.setText(translator.get("btn_load_bnlist"))
-        self.btn_load_bnlist.setToolTip(translator.get("tip_load_bnlist"))
-
-        self.btn_save_skin.setText(translator.get("btn_save_skin"))
-        self.btn_save_skin.setToolTip(translator.get("tip_save_skin"))
-
-        self.btn_load_skin.setText(translator.get("btn_load_skin"))
-        self.btn_load_skin.setToolTip(translator.get("tip_load_skin"))
-
-        self.btn_export_skin.setText(translator.get("btn_export_skindata"))
-        self.btn_export_skin.setToolTip(translator.get("tip_export_skindata"))
-        self.btn_import_skin.setText(translator.get("btn_import_skindata"))
-        self.btn_import_skin.setToolTip(translator.get("tip_import_skindata"))
-
-        self.weight_tool.retranslate_ui()
+        self.g_utils.setHeaderText("Utilities & Tools")
+        self.utils_widget.retranslate_ui()
         self.bone_explorer.retranslate_ui()
 
     def _on_remove_bone_influence(self, bone_id):
@@ -594,30 +664,3 @@ class SkinningTab(QWidget):
         idx, _ = self.layer_manager_widget.get_selected_indices()
         if idx < 0: idx = 0
         skin_controller_instance.apply_weight_to_active_layer(bone_id, 0.0, "set", ui_layer_index=idx)
-
-    def _on_export_skin_clicked(self):
-        if not skin_controller_instance.node: return
-        default_name = f"{skin_controller_instance.node.name}_SkinData.ohchaSkin"
-        path, _ = QFileDialog.getSaveFileName(self, translator.get("btn_export_skindata"), default_name,
-                                              "ohCHA Skin Files (*.ohchaSkin)")
-        if path:
-            if skin_controller_instance.export_skin_data(path):
-                QMessageBox.information(self, translator.get("title_save_complete"),
-                                        translator.get("msg_save_complete").format(os.path.basename(path)))
-
-    def _on_import_skin_clicked(self):
-        if not skin_controller_instance.node: return
-
-        if QMessageBox.warning(self, translator.get("title_warning"),
-                               translator.get("msg_import_warn"),
-                               QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
-            return
-
-        path, _ = QFileDialog.getOpenFileName(self, translator.get("btn_import_skindata"), "",
-                                              "ohCHA Skin Files (*.ohchaSkin)")
-        if path:
-            data = skin_controller_instance.import_skin_data(path)
-            if data:
-                self.layer_manager_widget.refresh_ui(data)
-                self.layer_manager_widget.set_session_active(True)
-                QMessageBox.information(self, translator.get("title_complete"), translator.get("msg_done"))
