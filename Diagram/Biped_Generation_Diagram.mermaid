@@ -1,0 +1,34 @@
+flowchart LR
+ subgraph PythonLayer["🐍 Python Controller"]
+    direction TB
+        Input["1. Config"]
+        Convert["2. Args Conversion"]
+  end
+ subgraph MaxLayer["⚙️ Model (BipedLogic.ms)"]
+    direction TB
+        Create["3. Create Biped"]
+        Props["4. Set Props"]
+        Fit["5. Auto Fit (Matrix)"]
+  end
+ subgraph Viewport["🧊 Viewport"]
+        Result[("Done")]
+  end
+    User(["👤 User"]) --> PythonLayer
+    Input --> Convert
+    Create --> Props
+    Props --> Fit
+    PythonLayer -- pymxs call --> MaxLayer
+    MaxLayer --> Viewport
+
+     Input:::darkNode
+     Convert:::darkNode
+     Create:::darkNode
+     Props:::darkNode
+     Fit:::highlight
+     Result:::darkNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef highlight fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575

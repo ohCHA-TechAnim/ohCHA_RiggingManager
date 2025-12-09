@@ -1,0 +1,126 @@
+---
+config:
+  layout: dagre
+  theme: dark
+---
+flowchart TB
+ subgraph Utils["🔧 Utils (Shared)"]
+    direction LR
+        U1["ohcha_max_utils.py"]
+        U2["translator.py"]
+        U3["config.py"]
+  end
+ subgraph ViewMid[" "]
+    direction LR
+        Widgets["ohcha_ui_widgets.py"]
+        Win["RigManagerWindow"]
+  end
+ subgraph Tabs["UI Tabs"]
+    direction LR
+        T1["edit_mesh_tab.py"]
+        T2["rigging_tab.py"]
+        T3["skinning_tab.py"]
+        T4["layer_tool.py"]
+        T5["naming_tool.py"]
+        T6["info_tab.py"]
+  end
+ subgraph View["🎨 View (PySide6 UI)"]
+    direction TB
+        Core["rig_manager_core.py"]
+        ViewMid
+        Tabs
+  end
+ subgraph Controller["🧠 Controller"]
+    direction LR
+        EM["edit_mesh_logic.py"]
+        RC["rigging_controller.py"]
+        SC["skin_layer_controller.py"]
+        GC["group_controller.py"]
+        NC["naming_controller.py"]
+  end
+ subgraph Model["⚙️ Model (MaxScript Core)"]
+    direction LR
+        MBI["ohcha_biped_logic.ms"]
+        MB["ohcha_bone_logic.ms"]
+        MS["ohcha_skin_logic.ms"]
+        MU["ohcha_shape_utils.ms"]
+  end
+    MaxUI["3ds Max UI / Toolbar"] --> Loader["📜 ohcha_loader.mcr"]
+    U1 ~~~ U2
+    U2 ~~~ U3
+    Loader --> Utils
+    Widgets ~~~ Win
+    T1 ~~~ T2
+    T2 ~~~ T3
+    T3 ~~~ T4
+    T4 ~~~ T5
+    T5 ~~~ T6
+    Core L_Core_Win_0@--> Win
+    Win L_Win_Tabs_0@--> Tabs
+    Widgets L_Widgets_Tabs_0@-.-> Tabs
+    Utils -- "Python.Execute" --> View
+    View --> Action("User Action / Signal")
+    EM ~~~ RC
+    RC ~~~ SC
+    SC ~~~ GC
+    GC ~~~ NC
+    Action --> Controller
+    MBI ~~~ MB
+    MB ~~~ MS
+    MS ~~~ MU
+    Controller -- "pymxs.runtime / Struct Call" --> Model
+    Model -. Return Result / Handle .-> Controller
+    Core --> Widgets
+
+     %% --- 스타일 정의 (White Bezel Look) ---
+     
+     %% 1. 노드 스타일: 테두리(stroke)를 흰색(#fff)으로 변경
+     classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+     
+     %% 2. 점선 노드 스타일
+     classDef dashedNode fill:#2d2d2d,stroke:#fa8231,stroke-width:2px,stroke-dasharray: 5 5,color:#fff,rx:3,ry:3
+     
+     %% 3. 액션 버튼 스타일
+     classDef signalLabel fill:#333,stroke:#fff,stroke-width:1.5px,color:#fff,rx:10,ry:10
+
+     %% 클래스 적용
+     U1:::darkNode
+     U2:::darkNode
+     U3:::darkNode
+     Widgets:::darkNode
+     Win:::darkNode
+     T1:::darkNode
+     T2:::darkNode
+     T3:::darkNode
+     T4:::darkNode
+     T5:::darkNode
+     T6:::darkNode
+     Core:::darkNode
+     EM:::darkNode
+     RC:::darkNode
+     SC:::darkNode
+     GC:::darkNode
+     NC:::darkNode
+     MBI:::darkNode
+     MB:::darkNode
+     MS:::darkNode
+     MU:::darkNode
+     MaxUI:::darkNode
+     Loader:::dashedNode
+     Action:::signalLabel
+    
+    %% 그룹 스타일
+    style ViewMid fill:none,stroke:none
+    style Tabs fill:#3b3b3b,stroke:#fff,stroke-width:1px,color:#ddd
+    style Utils fill:#2b2b2b,stroke:#a29bfe,stroke-width:2px,color:#a29bfe
+    style View fill:#2b2b2b,stroke:#74b9ff,stroke-width:2px,color:#74b9ff
+    style Controller fill:#2b2b2b,stroke:#55efc4,stroke-width:2px,color:#55efc4
+    style Model fill:#2b2b2b,stroke:#fab1a0,stroke-width:2px,color:#fab1a0
+
+    %% 연결선 곡률 설정
+    L_Core_Win_0@{ curve: linear } 
+    L_Win_Tabs_0@{ curve: linear } 
+    L_Widgets_Tabs_0@{ curve: linear }
+
+    %% --- [핵심] 모든 연결선을 흰색으로 강제 설정 ---
+    linkStyle default stroke:#fff,stroke-width:1.5px

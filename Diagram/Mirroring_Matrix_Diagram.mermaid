@@ -1,0 +1,40 @@
+flowchart LR
+ subgraph InputData["📥 Inputs"]
+    direction TB
+        Obj["Bone TM"]
+        Gizmo["Gizmo TM"]
+  end
+ subgraph Calc["🧮 Matrix Calculation"]
+    direction LR
+        Step1["1. To Local"]
+        Step2["2. Axis Flip"]
+        Step3["3. To World"]
+  end
+ subgraph Result["📤 Output"]
+    direction TB
+        Apply["Apply TM"]
+        Flip["Rot Adjust"]
+  end
+    Start(["Start"]) --> InputData
+    Step1 --> Step2
+    Step2 --> Step3
+    Apply --> Flip
+    InputData --> Calc
+    Calc --> Result
+
+     Obj:::darkNode
+     Gizmo:::darkNode
+     Step1:::darkNode
+     Step2:::mathNode
+     Step3:::darkNode
+     Apply:::darkNode
+     Flip:::darkNode
+     Start:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none

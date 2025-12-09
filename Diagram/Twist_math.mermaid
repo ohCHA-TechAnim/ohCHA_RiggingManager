@@ -1,0 +1,121 @@
+---
+config:
+  layout: dagre
+  theme: dark
+---
+flowchart TB
+ subgraph Context["🔍 1. Context Analysis"]
+    direction TB
+        Sel[("Target Bone")]
+        CheckType{"Is Leg / Stable?"}
+        CheckDriver{"Is Child Driven?"}
+  end
+ subgraph AnchorLogic["⚓ 2. Anchor Setup"]
+    direction TB
+        SetParent["Anchor = Parent Node"]
+        SetChild["Anchor = Child Node"]
+  end
+ subgraph StableCalc["Type A: Virtual Stable Matrix (Leg)"]
+    direction TB
+        VecA1["Dir = Normalize(BoneVec)"]
+        VecA2["Side = Cross(Up, Dir)"]
+        VecA3["StableUp = Cross(Dir, Side)"]
+        MatA["Construct Matrix3"]
+  end
+ subgraph RelCalc["Type B: Relative Decomposition (Arm)"]
+    direction TB
+        RelQ["RelRot = Child * Inv(Parent)"]
+        Decomp["Isolate Twist Axis (X)"]
+        MatB["Extract Angle"]
+  end
+ subgraph MathLogic["🧮 3. Math Calculation Strategy"]
+    direction TB
+        StableCalc
+        RelCalc
+  end
+ subgraph Result["🏁 4. Final Output"]
+    direction TB
+        Diff["Calculate Delta\n(Actual vs Virtual)"]
+        Weight["Apply Weight (0.0 ~ 1.0)"]
+        Final["Final Quaternion"]
+  end
+    Sel L_Sel_CheckType_0@--> CheckType & CheckDriver
+    CheckDriver L_CheckDriver_SetParent_0@-- No --> SetParent
+    CheckDriver L_CheckDriver_SetChild_0@-- Yes --> SetChild
+    VecA1 --> VecA2
+    VecA2 --> VecA3
+    VecA3 --> MatA
+    RelQ --> Decomp
+    Decomp --> MatB
+    Diff L_Diff_Weight_0@--> Weight
+    Weight --> Final
+    CheckType L_CheckType_StableCalc_0@-- Yes (Leg) --> StableCalc
+    CheckType L_CheckType_RelCalc_0@-- No (Arm) --> RelCalc
+    SetParent L_SetParent_StableCalc_0@-.-> StableCalc & RelCalc
+    SetChild L_SetChild_StableCalc_0@-.-> StableCalc & RelCalc
+    MatA L_MatA_Diff_0@--> Diff
+    MatB L_MatB_Diff_0@--> Diff
+
+     Sel:::darkNode
+     CheckType:::decisionNode
+     CheckDriver:::decisionNode
+     SetParent:::darkNode
+     SetChild:::darkNode
+     VecA1:::darkNode
+     VecA2:::mathNode
+     VecA3:::mathNode
+     MatA:::darkNode
+     RelQ:::darkNode
+     Decomp:::mathNode
+     MatB:::darkNode
+     Diff:::darkNode
+     Weight:::darkNode
+     Final:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef decisionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:5,ry:5
+    style Sel fill:#757575
+    style CheckType fill:#757575
+    style CheckDriver fill:#757575
+    style SetParent fill:#616161
+    style SetChild fill:#616161
+    style VecA1 fill:#616161
+    style MatA fill:#616161
+    style RelQ fill:#616161
+    style MatB fill:#616161
+    style Diff fill:#616161
+    style Weight fill:#616161
+    style Final fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+    linkStyle 9 stroke:#757575,fill:none
+    linkStyle 10 stroke:#757575
+    linkStyle 11 stroke:#757575,fill:none
+    linkStyle 12 stroke:#757575,fill:none
+    linkStyle 13 stroke:#757575,fill:none
+    linkStyle 14 stroke:#757575,fill:none
+    linkStyle 15 stroke:#757575,fill:none
+    linkStyle 16 stroke:#757575,fill:none
+    linkStyle 17 stroke:#757575,fill:none
+    linkStyle 18 stroke:#757575,fill:none
+
+    L_Sel_CheckType_0@{ curve: linear } 
+    L_Sel_CheckDriver_0@{ curve: linear } 
+    L_CheckDriver_SetParent_0@{ curve: linear } 
+    L_CheckDriver_SetChild_0@{ curve: linear } 
+    L_Diff_Weight_0@{ curve: linear } 
+    L_CheckType_StableCalc_0@{ curve: linear } 
+    L_CheckType_RelCalc_0@{ curve: linear } 
+    L_SetParent_StableCalc_0@{ curve: linear } 
+    L_SetParent_RelCalc_0@{ curve: linear } 
+    L_SetChild_StableCalc_0@{ curve: linear } 
+    L_SetChild_RelCalc_0@{ curve: linear } 
+    L_MatA_Diff_0@{ curve: linear } 
+    L_MatB_Diff_0@{ curve: linear }

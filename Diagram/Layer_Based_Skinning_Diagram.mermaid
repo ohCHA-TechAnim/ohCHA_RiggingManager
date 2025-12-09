@@ -1,0 +1,40 @@
+flowchart LR
+ subgraph MaxEnv["🧊 Max Source"]
+    direction TB
+        SkinMod[("Skin Data")]
+  end
+ subgraph PythonMem["🐍 Python Processing"]
+    direction LR
+        Import["1. Capture"]
+        Data[("2. Layer Data")]
+        Calc["3. Blend Calc"]
+  end
+ subgraph MaxTarget["🧊 Max Target"]
+    direction TB
+        Inject["4. Bulk Inject"]
+        View["Viewport Update"]
+  end
+    Import L_Import_Data_0@--> Data
+    Data --> Calc
+    Inject --> View
+    SkinMod ==> Import
+    Calc ==> Inject
+    User(("User")) -. Paint/Edit .-> Data
+
+     SkinMod:::darkNode
+     Import:::darkNode
+     Data:::dbNode
+     Calc:::darkNode
+     Inject:::darkNode
+     View:::darkNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef dbNode fill:#2d3436,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3,shape:cylinder
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575
+
+    L_Import_Data_0@{ curve: linear }

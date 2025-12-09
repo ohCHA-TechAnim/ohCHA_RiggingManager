@@ -1,0 +1,51 @@
+flowchart LR
+ subgraph Selection["1. User Selection"]
+    direction TB
+        Node[("Max Node")]
+        GetID["Get .handle (Integer)"]
+  end
+ subgraph PythonMem["2. Python Memory"]
+    direction TB
+        Store["Store ID in Dict/List"]
+        Wait["...Time Passes..."]
+  end
+ subgraph Execution["3. Execution Request"]
+    direction TB
+        Call["Call by ID"]
+        Find["maxOps.getNodeByHandle"]
+  end
+ subgraph Validation["4. Validation"]
+    direction TB
+        Check{"isValidNode?"}
+        Action["Execute Logic"]
+        Skip["Safe Return (No Crash)"]
+  end
+    Node --> GetID
+    Store --> Wait
+    Call --> Find
+    Check -- Yes --> Action
+    Check -- No --> Skip
+    GetID ==> Store
+    Wait ==> Call
+    Find --> Check
+
+     Node:::darkNode
+     GetID:::darkNode
+     Store:::safeNode
+     Wait:::darkNode
+     Call:::darkNode
+     Find:::safeNode
+     Check:::darkNode
+     Action:::safeNode
+     Skip:::errNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef errNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
