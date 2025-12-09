@@ -1,0 +1,91 @@
+flowchart TB
+ subgraph UI["🖥️ 1. UI Interaction"]
+    direction LR
+        Slider["Opacity Change"]
+        Paint["Weight Paint"]
+  end
+ subgraph UtilBlock["Utils"]
+    direction LR
+        Lerp["Linear Interp"]
+        Norm["Normalize"]
+        Flatten["Flatten"]
+        Pack["Bulk Packing"]
+  end
+ subgraph PythonCtrl["🧠 2. Python Controller"]
+    direction TB
+        Dict[("Layer Data")]
+        UtilBlock
+  end
+ subgraph MaxCore["⚙️ 3. 3ds Max Core"]
+    direction TB
+        Func["fn applyBulkSkinData()"]
+        Skin["Skin Modifier"]
+  end
+ subgraph Viewport["🧊 4. Viewport"]
+    direction TB
+        Refresh[("Real-time Update")]
+  end
+    Slider L_Slider_Paint_0@-- UI Action --- Paint
+    Paint --> Dict
+    Dict L_Dict_Lerp_0@--> Lerp
+    Lerp --> Norm
+    Norm --> Flatten
+    Flatten --> Pack
+    Pack L_Pack_Func_0@== "pymxs.runtime (Bulk Transfer)" ==> Func
+    Func L_Func_Skin_0@--> Skin
+    Skin L_Skin_Refresh_0@--> Refresh
+    UI -. triggers .-> PythonCtrl
+    Pack L_Pack_MaxCore_0@-. sendsData .-> MaxCore
+    MaxCore L_MaxCore_Viewport_0@--> Viewport
+
+     Slider:::darkNode
+     Slider:::darkNode
+     Paint:::darkNode
+     Paint:::darkNode
+     Lerp:::blueNode
+     Lerp:::blueNode
+     Norm:::blueNode
+     Norm:::blueNode
+     Flatten:::darkNode
+     Flatten:::darkNode
+     Pack:::redNode
+     Pack:::redNode
+     Dict:::dbNode
+     Dict:::dbNode
+     Func:::darkNode
+     Func:::darkNode
+     Skin:::darkNode
+     Skin:::darkNode
+     Refresh:::dbNode
+     Refresh:::dbNode
+     UI:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef blueNode fill:#0984e3,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef redNode fill:#d63031,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef dbNode fill:#6c5ce7,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3,shape:cylinder
+    classDef transBox fill:none,stroke:none
+    style Slider fill:#616161
+    style Paint fill:#616161
+    style Flatten fill:#616161
+    style Func fill:#616161
+    style Skin fill:#616161
+    style UI fill:#FFFFFF,stroke:#000000
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+    linkStyle 10 stroke:#757575,fill:none
+    linkStyle 11 stroke:#757575
+
+    L_Slider_Paint_0@{ curve: linear } 
+    L_Dict_Lerp_0@{ curve: linear } 
+    L_Pack_Func_0@{ curve: linear } 
+    L_Func_Skin_0@{ curve: linear } 
+    L_Skin_Refresh_0@{ curve: linear } 
+    L_Pack_MaxCore_0@{ curve: linear } 
+    L_MaxCore_Viewport_0@{ curve: linear }

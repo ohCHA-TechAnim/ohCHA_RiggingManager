@@ -1,0 +1,50 @@
+flowchart LR
+ subgraph Scanner["🔎 Environment Scan (PowerShell)"]
+    direction TB
+        Scan["Scan %AppData%"]
+        CheckVer{"Is Max Ver >= 2025?"}
+  end
+ subgraph InstallLogic["📂 Installation"]
+    direction TB
+        Loop["Loop Languages\n(ENU, KOR, JPN...)"]
+        Copy["Copy Files & Icons"]
+        Config["Create settings.json"]
+  end
+ subgraph Result["🏁 Finish"]
+        Success["Msg: Success"]
+        Fail["Msg: Version Error"]
+  end
+    Exe[("Installer.exe")] --> Scan
+    Scan --> CheckVer
+    Loop L_Loop_Copy_0@--> Copy
+    Copy --> Config
+    CheckVer L_CheckVer_Loop_0@-- Yes --> Loop
+    CheckVer L_CheckVer_Fail_0@-- No --> Fail
+    Config --> Success
+
+     Scan:::psNode
+     CheckVer:::darkNode
+     Loop:::darkNode
+     Copy:::psNode
+     Config:::psNode
+     Success:::darkNode
+     Fail:::darkNode
+     Exe:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef psNode fill:#6c5ce7,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    style CheckVer fill:#616161
+    style Loop fill:#616161
+    style Success fill:#616161
+    style Fail fill:#616161
+    style Exe fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+
+    L_Loop_Copy_0@{ curve: linear } 
+    L_CheckVer_Loop_0@{ curve: linear } 
+    L_CheckVer_Fail_0@{ curve: linear }

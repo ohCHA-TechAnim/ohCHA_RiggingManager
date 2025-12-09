@@ -55,7 +55,7 @@ flowchart TB
     T3 ~~~ T4
     T4 ~~~ T5
     T5 ~~~ T6
-    Core L_Core_Win_0@--> Win
+    Core L_Core_Win_0@--> Win & Widgets
     Win L_Win_Tabs_0@--> Tabs
     Widgets L_Widgets_Tabs_0@-.-> Tabs
     Utils -- "Python.Execute" --> View
@@ -70,20 +70,7 @@ flowchart TB
     MS ~~~ MU
     Controller -- "pymxs.runtime / Struct Call" --> Model
     Model -. Return Result / Handle .-> Controller
-    Core --> Widgets
 
-     %% --- 스타일 정의 (White Bezel Look) ---
-     
-     %% 1. 노드 스타일: 테두리(stroke)를 흰색(#fff)으로 변경
-     classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
-     
-     %% 2. 점선 노드 스타일
-     classDef dashedNode fill:#2d2d2d,stroke:#fa8231,stroke-width:2px,stroke-dasharray: 5 5,color:#fff,rx:3,ry:3
-     
-     %% 3. 액션 버튼 스타일
-     classDef signalLabel fill:#333,stroke:#fff,stroke-width:1.5px,color:#fff,rx:10,ry:10
-
-     %% 클래스 적용
      U1:::darkNode
      U2:::darkNode
      U3:::darkNode
@@ -108,19 +95,40 @@ flowchart TB
      MaxUI:::darkNode
      Loader:::dashedNode
      Action:::signalLabel
-    
-    %% 그룹 스타일
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef dashedNode fill:#2d2d2d,stroke:#fa8231,stroke-width:2px,stroke-dasharray: 5 5,color:#fff,rx:3,ry:3
+    classDef signalLabel fill:#333,stroke:#fff,stroke-width:1.5px,color:#fff,rx:10,ry:10
+    style U1 fill:#616161
+    style U2 fill:#616161
+    style U3 fill:#616161
+    style Widgets fill:#616161
+    style Win fill:#616161
+    style T1 fill:#616161
+    style T2 fill:#616161
+    style T3 fill:#616161
+    style T4 fill:#616161
+    style T5 fill:#616161
+    style T6 fill:#616161
+    style Core fill:#616161
     style ViewMid fill:none,stroke:none
     style Tabs fill:#3b3b3b,stroke:#fff,stroke-width:1px,color:#ddd
-    style Utils fill:#2b2b2b,stroke:#a29bfe,stroke-width:2px,color:#a29bfe
-    style View fill:#2b2b2b,stroke:#74b9ff,stroke-width:2px,color:#74b9ff
-    style Controller fill:#2b2b2b,stroke:#55efc4,stroke-width:2px,color:#55efc4
-    style Model fill:#2b2b2b,stroke:#fab1a0,stroke-width:2px,color:#fab1a0
+    style EM fill:#616161
+    style RC fill:#616161
+    style SC fill:#616161
+    style GC fill:#616161
+    style NC fill:#616161
+    style MBI fill:#616161
+    style MB fill:#616161
+    style MS fill:#616161
+    style MU fill:#616161
+    style MaxUI fill:#616161
+    style Loader fill:#616161
+    style Utils fill:#424242,stroke:#a29bfe,stroke-width:2px,color:#a29bfe
+    style View fill:#424242,stroke:#74b9ff,stroke-width:2px,color:#74b9ff
+    style Action fill:#616161
+    style Controller fill:#424242,stroke:#55efc4,stroke-width:2px,color:#55efc4
+    style Model fill:#424242,stroke:#fab1a0,stroke-width:2px,color:#fab1a0
 
-    %% 연결선 곡률 설정
     L_Core_Win_0@{ curve: linear } 
     L_Win_Tabs_0@{ curve: linear } 
     L_Widgets_Tabs_0@{ curve: linear }
-
-    %% --- [핵심] 모든 연결선을 흰색으로 강제 설정 ---
-    linkStyle default stroke:#fff,stroke-width:1.5px
