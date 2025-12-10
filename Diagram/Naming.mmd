@@ -1,0 +1,60 @@
+flowchart TB
+ subgraph Init["📥 Initialization"]
+    direction TB
+        Load["Load Selection"]
+        Cache[("Cache List\n{Handle, OldName}")]
+  end
+ subgraph StringOp["String Operation"]
+    direction LR
+        Base["1. Base Name\n(Slice/Replace)"]
+        Num@{ label: "2. Padding\\n(f'{i:03d}')" }
+        Merge["3. Merge\n(Pre + Base + Suf + Num)"]
+  end
+ subgraph PythonLogic["🐍 Python Calculation"]
+    direction TB
+        Input["Get Rules\n(Prefix, Suffix, Num...)"]
+        StringOp
+  end
+ subgraph UI["🖥️ Visual Feedback"]
+        Preview["Preview Table\n(Old Name vs New Name)"]
+  end
+ subgraph Max["⚙️ Execution (MaxScript)"]
+        Apply["fn renameObjects\n(Handle, NewName)"]
+  end
+    User(["👤 User Select"]) --> Load
+    Load --> Cache
+    Base --> Num
+    Num --> Merge
+    Input --> StringOp
+    Cache L_Cache_StringOp_0@--> StringOp
+    Merge --> Preview
+    Preview == User Click 'Apply' ==> Apply
+
+    Num@{ shape: rect}
+     Load:::darkNode
+     Cache:::dbNode
+     Base:::mathNode
+     Num:::mathNode
+     Merge:::mathNode
+     Input:::darkNode
+     Preview:::safeNode
+     Apply:::actionNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef dbNode fill:#6c5ce7,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3,shape:cylinder
+    style Load fill:#616161
+    style Input fill:#616161
+    style User fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575
+
+    L_Cache_StringOp_0@{ curve: linear }

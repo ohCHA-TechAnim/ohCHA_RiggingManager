@@ -1,0 +1,79 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph MathChecks["🧮 Validation Logic"]
+    direction LR
+        ScaleCheck["1. Scale Check<br>abs(1.0 - axis) &gt; 1e-5"]
+        SkinCheck["2. Modifier Check<br>ClassOf(Mod) == Skin"]
+        PivotCheck["3. Pivot Check<br>distance(pos, [0,0,0])"]
+  end
+ subgraph Inspection["🔍 Inspection Engine (Python)"]
+    direction TB
+        Scan["Get Transform Data"]
+        MathChecks
+  end
+ subgraph UI["🖥️ Visual Feedback"]
+    direction TB
+        Signal{"🚦 Result?"}
+        Pass["Green (Pass)"]
+        Fail["Red (Fail)"]
+        FixBtn@{ label: "🔧 Click 'Fix'" }
+  end
+ subgraph Execution["⚙️ Execution (MaxScript)"]
+    direction TB
+        Undo@{ label: "undo 'Fix' on ( ... )" }
+        Reset["Reset XForm"]
+        Collapse["Collapse Stack"]
+  end
+    Signal L_Signal_Pass_0@-- No Issue --> Pass
+    Signal L_Signal_Fail_0@-- Issue Found --> Fail
+    Fail --> FixBtn
+    Undo --> Reset
+    Reset --> Collapse
+    User(["👤 Select Mesh"]) --> Scan
+    Scan --> MathChecks
+    MathChecks --> Signal
+    FixBtn L_FixBtn_Undo_0@== Command Execute ==> Undo
+    Collapse -. Refresh UI .-> Scan
+
+    FixBtn@{ shape: rect}
+    Undo@{ shape: rect}
+     ScaleCheck:::mathNode
+     SkinCheck:::mathNode
+     PivotCheck:::mathNode
+     Scan:::darkNode
+     Signal:::darkNode
+     Pass:::safeNode
+     Fail:::actionNode
+     FixBtn:::darkNode
+     Undo:::safeNode
+     Reset:::darkNode
+     Collapse:::darkNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    style Scan fill:#616161
+    style Signal fill:#616161
+    style FixBtn fill:#616161
+    style Reset fill:#616161
+    style Collapse fill:#616161
+    style User fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+    linkStyle 9 stroke:#757575,fill:none
+
+    L_Signal_Pass_0@{ curve: linear } 
+    L_Signal_Fail_0@{ curve: linear } 
+// [MermaidChart: 663ad840-04d4-4341-8f5a-259bc8e089f6]
+    L_FixBtn_Undo_0@{ curve: linear }

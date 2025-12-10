@@ -1,0 +1,60 @@
+flowchart TB
+ subgraph Input["📥 Data Source"]
+    direction TB
+        MaxData[("3ds Max Layers\n(Native Hierarchy)")]
+        JsonData[("Preset JSON\n(Standard Layout)")]
+  end
+ subgraph Sync["Synchronization Logic"]
+    direction LR
+        Fetch["1. Fetch Hierarchy\n(Get Layer & Parent)"]
+        Parse["2. Parse Structure\n(Tree Node Logic)"]
+  end
+ subgraph Preset["Preset System"]
+    direction LR
+        Read["Read JSON"]
+        Rebuild["3. Create Missing Layers"]
+        Link["4. Relink Parents"]
+  end
+ subgraph Controller["🐍 Python Controller"]
+    direction TB
+        Sync
+        Preset
+  end
+ subgraph View["🎨 UI (QTreeWidget)"]
+        TreeItem["Layer Tree Item\n(Drag & Drop Enabled)"]
+  end
+    Fetch --> Parse
+    Read --> Rebuild
+    Rebuild --> Link
+    MaxData L_MaxData_Fetch_0@== ohCHA_LayerLogic ==> Fetch
+    JsonData L_JsonData_Read_0@-. Load .-> Read
+    Parse --> TreeItem
+    Link L_Link_MaxData_0@-. Update Max .-> MaxData
+
+     MaxData:::darkNode
+     JsonData:::dbNode
+     Fetch:::mathNode
+     Parse:::darkNode
+     Read:::darkNode
+     Rebuild:::actionNode
+     Link:::actionNode
+     TreeItem:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef dbNode fill:#6c5ce7,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3,shape:cylinder
+    style MaxData fill:#616161
+    style Parse fill:#616161
+    style Read fill:#616161
+    style TreeItem fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+
+    L_MaxData_Fetch_0@{ curve: linear } 
+    L_JsonData_Read_0@{ curve: linear } 
+    L_Link_MaxData_0@{ curve: linear }

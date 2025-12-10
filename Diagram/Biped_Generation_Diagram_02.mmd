@@ -1,0 +1,79 @@
+---
+config:
+  layout: dagre
+---
+flowchart TB
+ subgraph Python["🐍 Python Controller"]
+    direction TB
+        Conf["1. Get UI Config\n(Spine, Fingers, Tails...)"]
+        Args["2. Convert to Args"]
+  end
+ subgraph Phase1["Phase 1: Generation"]
+    direction TB
+        Delete["Cleanup Old Biped"]
+        Create["3. biped.createNew()"]
+  end
+ subgraph Phase2["Phase 2: Configuration"]
+    direction TB
+        Mode["Figure Mode ON"]
+        Props["4. Set Body Properties\n(Links, Triangle Pelvis)"]
+  end
+ subgraph Phase3["Phase 3: Matrix Fitting"]
+    direction TB
+        Traverse["Collect All Bones"]
+        FindGuide@{ label: "Find 'Guide_' Helper" }
+        ApplyTM["5. Apply Transform\n(Pos & Rot Matrix)"]
+  end
+ subgraph MaxLogic["⚙️ Biped Logic (MaxScript)"]
+    direction TB
+        Phase1
+        Phase2
+        Phase3
+  end
+ subgraph Viewport["🧊 Viewport Result"]
+        FinalRig[("Final Rigged Biped")]
+  end
+    User(["👤 User Config"]) --> Python
+    Conf --> Args
+    Delete --> Create
+    Mode --> Props
+    Traverse --> FindGuide
+    FindGuide --> ApplyTM
+    Phase1 --> Phase2
+    Phase2 --> Phase3
+    Args == pymxs call ==> Phase1
+    Phase3 --> Viewport
+
+    FindGuide@{ shape: rect}
+     Conf:::darkNode
+     Args:::darkNode
+     Delete:::darkNode
+     Create:::actionNode
+     Mode:::darkNode
+     Props:::mathNode
+     Traverse:::darkNode
+     FindGuide:::darkNode
+     ApplyTM:::safeNode
+     FinalRig:::safeNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    style Conf fill:#616161
+    style Args fill:#424242
+    style Delete fill:#616161
+    style Mode fill:#616161
+    style Traverse fill:#616161
+    style FindGuide fill:#424242
+    style User fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+    linkStyle 9 stroke:#757575

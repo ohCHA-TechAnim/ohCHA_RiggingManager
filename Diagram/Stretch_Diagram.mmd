@@ -1,0 +1,88 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph Analysis["Hierarchy Analysis"]
+    direction LR
+        CheckChild{"Has Child?"}
+        GetChild["Get Child Bone"]
+        CreateEnd["Create End Bone\n(Vector Offset)"]
+  end
+ subgraph Objects["Controller Generation"]
+    direction TB
+        StartPin["2. Create Start Pin\n(Align to Bone)"]
+        EndPin["3. Create End Pin\n(Align to Child)"]
+        Link["Link Hierarchy"]
+  end
+ subgraph Constraints["Rigging Connection"]
+    direction TB
+        PosCons["4. Pos Const\n(Bone -> Start)"]
+        LookCons["5. LookAt Const\n(Bone -> End)"]
+        Prop["6. Unfreeze Length"]
+  end
+ subgraph MaxLogic["⚙️ Stretch Logic (MaxScript)"]
+    direction TB
+        Init["1. Initialize Loop"]
+        Analysis
+        Objects
+        Constraints
+  end
+ subgraph Viewport["🧊 Viewport"]
+        Result[("Stretchy Rig")]
+  end
+    User(["👤 Select Bones"]) --> Init
+    CheckChild L_CheckChild_GetChild_0@-- Yes --> GetChild
+    CheckChild L_CheckChild_CreateEnd_0@-- No --> CreateEnd
+    StartPin --> EndPin
+    EndPin --> Link
+    PosCons --> LookCons
+    LookCons --> Prop
+    Init --> Analysis
+    Analysis L_Analysis_Objects_0@--> Objects
+    Objects --> Constraints
+    Constraints --> Result
+    GetChild L_GetChild_EndPin_0@-.-> EndPin
+    CreateEnd L_CreateEnd_EndPin_0@-.-> EndPin
+
+     CheckChild:::conditionNode
+     GetChild:::darkNode
+     CreateEnd:::actionNode
+     StartPin:::mathNode
+     EndPin:::mathNode
+     Link:::darkNode
+     PosCons:::safeNode
+     LookCons:::safeNode
+     Prop:::actionNode
+     Init:::darkNode
+     Result:::darkNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef conditionNode fill:#6c5ce7,stroke:#fff,stroke-width:2px,color:#fff,rx:5,ry:5
+    style GetChild fill:#616161
+    style Link fill:#616161
+    style Init fill:#616161
+    style Result fill:#616161
+    style User fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+    linkStyle 9 stroke:#757575,fill:none
+    linkStyle 10 stroke:#757575,fill:none
+    linkStyle 11 stroke:#757575,fill:none
+    linkStyle 12 stroke:#757575,fill:none
+
+    L_CheckChild_GetChild_0@{ curve: linear } 
+    L_CheckChild_CreateEnd_0@{ curve: linear } 
+    L_Analysis_Objects_0@{ curve: linear } 
+    L_GetChild_EndPin_0@{ curve: linear } 
+    L_CreateEnd_EndPin_0@{ curve: linear }

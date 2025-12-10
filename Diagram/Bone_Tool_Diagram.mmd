@@ -1,0 +1,72 @@
+---
+config:
+  layout: elk
+---
+flowchart LR
+ subgraph Python["🐍 Python Controller"]
+    direction TB
+        Params["1. Get Parameters\n(Count, W/H, Taper, Fins)"]
+        Pack["2. Argument Packing"]
+  end
+ subgraph Creation["Bone Generation"]
+    direction TB
+        CalcVec["3. Calc Vector Pos\n(Start + Dir * Length * i)"]
+        Create["4. boneSys.createBone()"]
+        Link["5. Link Hierarchy\n(curr.parent = prev)"]
+  end
+ subgraph Props["Property Injection"]
+    direction LR
+        SetSize["Set W/H"]
+        SetFin["Set Fins"]
+        SetTaper["Set Taper"]
+  end
+ subgraph MaxLogic["⚙️ Bone Logic (MaxScript)"]
+    direction TB
+        StartLoop("🔄 Loop: i = 1 to Count")
+        Creation
+        Props
+  end
+ subgraph Viewport["🧊 Viewport"]
+        Result[("Bone Chain Created")]
+  end
+    User(["👤 User Input"]) --> Python
+    Params --> Pack
+    CalcVec --> Create
+    Create --> Link
+    SetSize ~~~ SetFin
+    SetFin ~~~ SetTaper
+    StartLoop --> Creation
+    Creation --> Props
+    Pack == pymxs call ==> StartLoop
+    Props --> Result
+
+     Params:::darkNode
+     Pack:::darkNode
+     CalcVec:::mathNode
+     Create:::actionNode
+     Link:::safeNode
+     SetSize:::darkNode
+     SetFin:::darkNode
+     SetTaper:::darkNode
+     StartLoop:::mathNode
+     Result:::darkNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    style Params fill:#616161
+    style Pack fill:#616161
+    style SetSize fill:#616161
+    style SetFin fill:#616161
+    style SetTaper fill:#616161
+    style Result fill:#616161
+    style User fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 1 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+    linkStyle 9 stroke:#757575,fill:none

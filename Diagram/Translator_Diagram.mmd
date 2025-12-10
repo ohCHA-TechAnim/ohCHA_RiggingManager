@@ -1,0 +1,63 @@
+flowchart TB
+ subgraph UI_Input["🖥️ UI Entry"]
+        Menu["Select Language\n(ComboBox)"]
+  end
+ subgraph Data["Data Management"]
+    direction LR
+        Dict[("Dictionary Map\n{Key: {en, kr...}}")]
+        JSON[("settings.json\n(Auto-Save)")]
+  end
+ subgraph Logic["🧠 Translator Core (Singleton)"]
+    direction TB
+        SetLang@{ label: "set_language('kr')\\n(Update State)" }
+        Data
+  end
+ subgraph Children["Child Components"]
+    direction LR
+        Tabs["Tabs\nretranslate_ui()"]
+        Widgets["Widgets\nretranslate_ui()"]
+  end
+ subgraph Refresh["🔄 Live UI Refresh Cascade"]
+    direction TB
+        MainWin["Main Window\ncall retranslate()"]
+        Children
+  end
+    User(["👤 User Action"]) --> Menu
+    Dict ~~~ JSON
+    SetLang --> Dict
+    SetLang L_SetLang_JSON_0@-. Save Preference .-> JSON
+    Tabs --> Widgets
+    MainWin --> Tabs
+    Menu --> SetLang
+    SetLang L_SetLang_MainWin_0@== Signal Broadcast ==> MainWin
+    Dict L_Dict_MainWin_0@-. Get String .-> MainWin
+
+    SetLang@{ shape: rect}
+     Menu:::darkNode
+     Dict:::dbNode
+     JSON:::dbNode
+     SetLang:::actionNode
+     Tabs:::darkNode
+     Widgets:::darkNode
+     MainWin:::safeNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef dbNode fill:#6c5ce7,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3,shape:cylinder
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    style Menu fill:#616161
+    style Tabs fill:#616161
+    style Widgets fill:#616161
+    style User fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+
+    L_SetLang_JSON_0@{ curve: linear } 
+    L_SetLang_MainWin_0@{ curve: linear } 
+    L_Dict_MainWin_0@{ curve: linear }

@@ -1,0 +1,64 @@
+---
+config:
+  layout: dagre
+---
+flowchart TB
+ subgraph UI["🖥️ UI Interaction (Python)"]
+    direction TB
+        Pick1["Pick Start Color"]
+        Pick2["Pick End Color"]
+        Mode{"Is Gradient?"}
+  end
+ subgraph Loop["🔄 Iteration Loop"]
+    direction LR
+        CalcRatio["2. Calc Ratio (0.0~1.0)\nRatio = i / (Count-1)"]
+        CalcRGB["3. Lerp RGB\nC = C1*(1-t) + C2*t"]
+        Apply["4. node.wirecolor = C"]
+  end
+ subgraph MaxLogic["⚙️ Color Logic (MaxScript)"]
+    direction TB
+        Init["1. Collect Nodes"]
+        Loop
+  end
+ subgraph Viewport["🧊 Viewport"]
+        Result[("Visual Feedback")]
+  end
+    User(["👤 User Action"]) --> UI
+    Pick1 ~~~ Pick2
+    CalcRatio --> CalcRGB
+    CalcRGB --> Apply
+    Init --> Loop
+    Pick1 L_Pick1_Init_0@== Args (Colors, Bool) ==> Init
+    Pick2 == Args (Colors, Bool) ==> Init
+    Mode L_Mode_Init_0@== Args (Colors, Bool) ==> Init
+    Apply --> Result
+
+     Pick1:::darkNode
+     Pick2:::darkNode
+     Mode:::actionNode
+     CalcRatio:::mathNode
+     CalcRGB:::mathNode
+     Apply:::safeNode
+     Init:::darkNode
+     Result:::darkNode
+     User:::darkNode
+    classDef darkNode fill:#2d2d2d,stroke:#fff,stroke-width:1.5px,color:#fff,rx:3,ry:3
+    classDef mathNode fill:#0984e3,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef actionNode fill:#d63031,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    classDef safeNode fill:#00b894,stroke:#fff,stroke-width:2px,color:#fff,rx:3,ry:3
+    style Pick1 fill:#616161
+    style Pick2 fill:#616161
+    style Init fill:#616161
+    style Result fill:#616161
+    style User fill:#616161
+    linkStyle 0 stroke:#757575,fill:none
+    linkStyle 2 stroke:#757575,fill:none
+    linkStyle 3 stroke:#757575,fill:none
+    linkStyle 4 stroke:#757575,fill:none
+    linkStyle 5 stroke:#757575,fill:none
+    linkStyle 6 stroke:#757575,fill:none
+    linkStyle 7 stroke:#757575,fill:none
+    linkStyle 8 stroke:#757575,fill:none
+
+    L_Pick1_Init_0@{ curve: linear } 
+    L_Mode_Init_0@{ curve: linear }
